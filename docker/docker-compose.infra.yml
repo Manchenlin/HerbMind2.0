@@ -1,0 +1,66 @@
+# HerbMind 开发期中间件（只跑基础设施；业务应用跑 IDE）
+# 用法：docker compose -f docker/docker-compose.infra.yml up -d
+services:
+  postgres:
+    image: pgvector/pgvector:pg17          # 含 pgvector；pg_jieba 见 README
+    container_name: herbmind-pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: herbmind
+      TZ: Asia/Shanghai
+    ports:
+      - "5432:5432"
+    volumes:
+      - ../database/pg:/docker-entrypoint-initdb.d:ro   # 首次启动自动执行 00/01/02
+      - herbmind_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d herbmind"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  neo4j:
+    image: neo4j:5
+    container_name: herbmind-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/herbmind123
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - herbmind_neo4jdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7
+    container_name: herbmind-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  nacos:
+    image: nacos/nacos-server:v2.4.3
+    container_name: herbmind-nacos
+    environment:
+      MODE: standalone
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8848/nacos/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 40
+
+volumes:
+  herbmind_pgdata:
+  herbmind_neo4jdata:

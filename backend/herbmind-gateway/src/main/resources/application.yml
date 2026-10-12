@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: herbmind-gateway
+  cloud:
+    gateway:
+      routes:
+        # /api/biz/** 只给 BFF
+        - id: bff
+          uri: http://localhost:8090
+          predicates:
+            - Path=/api/biz/**
+        # /api/agent/** 只给 Agent（阶段 0 后接入）
+        - id: agent
+          uri: http://localhost:8091
+          predicates:
+            - Path=/api/agent/**
+
+logging:
+  level:
+    org.springframework.cloud.gateway: info

@@ -1,0 +1,16 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: herbmind-bff
+  jackson:
+    default-property-inclusion: non_null
+
+# 本地开发：静态直连 svc（免 Nacos）。集成日改为服务名发现即可。
+herbmind:
+  svc-catalog-url: http://localhost:8082
+
+logging:
+  level:
+    com.herbmind: debug

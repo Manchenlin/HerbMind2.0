@@ -1,0 +1,22 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: svc-catalog
+  datasource:
+    url: jdbc:postgresql://localhost:5432/herbmind
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true   # book_id -> bookId
+  global-config:
+    db-config:
+      id-type: input                      # ID 由业务传入（TEXT）

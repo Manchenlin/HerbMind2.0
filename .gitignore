@@ -1,0 +1,24 @@
+# 依赖与构建产物
+target/
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# 运行时
+docker/volumes/
+*.log
+.env
+
+# 流程草稿区（executing-plans）
+.superpowers/
+
+# OS
+.DS_Store
+Thumbs.db
