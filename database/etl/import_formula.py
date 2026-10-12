@@ -41,6 +41,8 @@ def main():
                VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT (id) DO NOTHING""",
             f,
         )
+    # formula_herb 用自增主键，重复运行会产生重复行 —— 先清后插，保证幂等
+    execute("DELETE FROM formula_herb WHERE formula_id = ANY(%s)", ([f[0] for f in FORMULAS],))
     for h in HERBS:
         execute(
             """INSERT INTO formula_herb(formula_id,herb_name,dose,unit,role,seq)
