@@ -9,14 +9,31 @@
 # 1) 起中间件（PostgreSQL / Neo4j / Redis / Nacos）
 docker compose -f docker/docker-compose.infra.yml up -d
 
-# 2) 建表 + 灌种子（脚本见 database/）
-#    PG 初始化脚本已在首次启动时自动执行（挂载到 initdb）；种子需手动跑一次：
-cd database/etl && pip install -r requirements.txt && python seed_books.py && python import_formula.py
+# 2) 建表（首次启动自动执行 database/pg/00→04）+ 导入数据
+#    正式数据（推荐，从旧库迁移，向量原样搬运、零云额度）：
+cd database/etl && pip install -r requirements.txt
+python migrate_legacy.py     # 245 方 / 290 案 / 568 条文 / 535 向量
+python build_graph.py        # Neo4j 建图
+#    （可选）极小打样种子：python seed_books.py && python import_formula.py
 
-# 3) 起服务（IDEA 打开 backend/pom.xml，或命令行）
+# 3) 起服务（IDEA 打开 backend/pom.xml，或 bash scripts/run-dev.sh）
 #    svc-catalog :8082 → herbmind-bff :8090 → herbmind-gateway :8080
 #    前端：cd frontend && npm i && npm run dev
 ```
+
+## 数据库（已建成 · 41 表 / 73 索引）
+
+建库脚本 `database/pg/`（initdb 自动按序执行，全部幂等）：
+
+| 文件 | 内容 |
+|---|---|
+| `00-extensions.sql` | `vector` / `pg_trgm` /（`pg_jieba` 可选，缺失则兜底 `jiebacfg`） |
+| `01-schema.sql` | 语料骨架（book / book_node）+ 内容域 + 最小三域表 |
+| `02-relation.sql` | 通用关系表 `relation`（跨域兜底，06 §7） |
+| `03-domains.sql` | 用户域 / 练习学习域 / 图谱规则域 / Agent 域 / 治理域 + 专属关系表 |
+| `04-indexes.sql` | **HNSW 向量索引** + GIN 全文 + trgm 模糊索引 |
+
+数据：`formula=245`、`case_record=290`、`classic_quote=568`、`content_unit=535`（全含 1024 维向量）、`formula_herb=1006`、`relation=155`。
 
 ## 目录结构
 
@@ -28,10 +45,10 @@ HerbMind/
 │   ├── svc-catalog          样例服务：/internal/catalog/**
 │   ├── herbmind-bff         前端唯一业务入口：/api/biz/**
 │   └── herbmind-gateway     网关：/api/biz/** → BFF
-├── frontend/           Vue 3 + TS + Vite
+├── frontend/           Vue 3 + TS + Vite（视觉基线 = prototype/theme.css）
 ├── database/
-│   ├── pg/             DDL + 扩展（initdb 自动执行）
-│   └── etl/            语料导入 / 向量化 / 建图脚本（Python）
+│   ├── pg/             DDL 00→04（initdb 自动执行）
+│   └── etl/            迁移 / 种子 / 建图脚本（Python）
 ├── docker/             docker-compose.infra.yml（中间件）
 └── scripts/            smoke.py 端到端冒烟
 ```

@@ -107,9 +107,8 @@ CREATE TABLE IF NOT EXISTS content_unit (
   graph_synced BOOLEAN NOT NULL DEFAULT FALSE
 );
 CREATE INDEX IF NOT EXISTS idx_content_unit_book ON content_unit(book_id);
-CREATE INDEX IF NOT EXISTS idx_content_unit_tsv  ON content_unit USING gin (search_tsv);
+-- 全文索引由 04-indexes.sql 统一创建（idx_cu_tsv）
 -- 向量索引（数据量大后再建亦可）：
--- CREATE INDEX ON content_unit USING hnsw (embedding vector_cosine_ops);
 
 -- ============ B 用户域（域2，最小集） ============
 CREATE TABLE IF NOT EXISTS app_user (
