@@ -1,7 +1,15 @@
 # HerbMind（本草心智）· v2 重构
 
 > 可插拔的多语料中医知识平台。首个语料《中医经典方证案例研究》，已接入《伤寒论》原文。
-> 规划文档见同级目录 `../project_plan/`。
+> 规划文档（含 `prototype/` 原型）见本仓库 [`project_plan/`](project_plan/)。
+> **远端仓库**：`https://github.com/Manchenlin/HerbMind2.0.git`
+
+## 获取代码
+
+```bash
+git clone https://github.com/Manchenlin/HerbMind2.0.git
+cd HerbMind2.0
+```
 
 ## 快速开始
 
