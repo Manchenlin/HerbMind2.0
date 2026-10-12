@@ -3,23 +3,28 @@
 > 可插拔的多语料中医知识平台。首个语料《中医经典方证案例研究》，已接入《伤寒论》原文。
 > 规划文档见同级目录 `../project_plan/`。
 
-## 快速开始（三条命令）
+## 快速开始
+
+> **组员请看 [`docs/新人上手指南.md`](docs/新人上手指南.md)**（零经验版，含常见问题）。
 
 ```bash
 # 1) 起中间件（PostgreSQL / Neo4j / Redis / Nacos）
+#    首次启动会自动建好 41 张表（database/pg/00→04）
 docker compose -f docker/docker-compose.infra.yml up -d
 
-# 2) 建表（首次启动自动执行 database/pg/00→04）+ 导入数据
-#    正式数据（推荐，从旧库迁移，向量原样搬运、零云额度）：
-cd database/etl && pip install -r requirements.txt
-python migrate_legacy.py     # 245 方 / 290 案 / 568 条文 / 535 向量
-python build_graph.py        # Neo4j 建图
-#    （可选）极小打样种子：python seed_books.py && python import_formula.py
+# 2) 导入数据
+#  ★ 组员（推荐）：用组长分发的数据快照（2~3MB，不进仓库、不烧云额度）
+bash scripts/init-data.sh /c/Users/你/Desktop/herbmind_data.sql.gz
+
+#  ★ 仅"数据的产出者"（拥有旧库的人）才跑迁移：
+#    cd database/etl && pip install -r requirements.txt && python migrate_legacy.py && python build_graph.py
 
 # 3) 起服务（IDEA 打开 backend/pom.xml，或 bash scripts/run-dev.sh）
 #    svc-catalog :8082 → herbmind-bff :8090 → herbmind-gateway :8080
-#    前端：cd frontend && npm i && npm run dev
+#    前端：cd frontend && npm i && npm run dev  →  http://localhost:5173/library
 ```
+
+> **数据不重复消耗**：535 条向量已随快照分发，**任何人都不需要重新调用 Embedding API**。
 
 ## 数据库（已建成 · 41 表 / 73 索引）
 

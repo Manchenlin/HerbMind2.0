@@ -16,6 +16,12 @@ docker/volumes/
 *.log
 .env
 
+# ★ 数据快照：体积大，一律不进仓库（由团队私下分发，见 docs/新人上手指南.md）
+*.sql.gz
+*.dump
+database/seed/
+!database/pg/*.sql
+
 # 流程草稿区（executing-plans）
 .superpowers/
 
