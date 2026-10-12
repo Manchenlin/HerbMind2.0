@@ -1,9 +1,13 @@
 # HerbMind 开发期中间件（只跑基础设施；业务应用跑 IDE）
 # 用法：docker compose -f docker/docker-compose.infra.yml up -d
+#
+# 注意：容器/卷统一带 herbmind-v2 前缀，避免与旧栈（herbmind-pg / herbmind_pgdata 等）冲突。
+name: herbmind-v2
+
 services:
   postgres:
     image: pgvector/pgvector:pg17          # 含 pgvector；pg_jieba 见 README
-    container_name: herbmind-pg
+    container_name: herbmind-v2-pg
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -12,8 +16,8 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ../database/pg:/docker-entrypoint-initdb.d:ro   # 首次启动自动执行 00/01/02
-      - herbmind_pgdata:/var/lib/postgresql/data
+      - ../database/pg:/docker-entrypoint-initdb.d:ro   # 首次启动自动执行 00/01
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d herbmind"]
       interval: 5s
@@ -22,14 +26,14 @@ services:
 
   neo4j:
     image: neo4j:5
-    container_name: herbmind-neo4j
+    container_name: herbmind-v2-neo4j
     environment:
       NEO4J_AUTH: neo4j/herbmind123
     ports:
       - "7474:7474"
       - "7687:7687"
     volumes:
-      - herbmind_neo4jdata:/data
+      - neo4jdata:/data
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:7474 >/dev/null || exit 1"]
       interval: 10s
@@ -38,7 +42,7 @@ services:
 
   redis:
     image: redis:7
-    container_name: herbmind-redis
+    container_name: herbmind-v2-redis
     ports:
       - "6379:6379"
     healthcheck:
@@ -49,7 +53,7 @@ services:
 
   nacos:
     image: nacos/nacos-server:v2.4.3
-    container_name: herbmind-nacos
+    container_name: herbmind-v2-nacos
     environment:
       MODE: standalone
     ports:
@@ -62,5 +66,5 @@ services:
       retries: 40
 
 volumes:
-  herbmind_pgdata:
-  herbmind_neo4jdata:
+  pgdata:
+  neo4jdata:

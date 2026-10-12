@@ -50,3 +50,22 @@ HerbMind/
 默认镜像 `pgvector/pgvector:pg17` **不含** pg_jieba。初始化脚本已做兜底：若未装 pg_jieba，
 会自动创建一个名为 `jiebacfg` 的文本检索配置（`COPY = simple`），保证建表与查询**不报错**，
 但中文分词效果有限。装好 pg_jieba 后，删掉兜底配置重建即可（见 `database/pg/00-extensions.sql` 注释）。
+
+## 本机踩坑速查（troubleshooting）
+
+| 现象 | 原因 | 处理 |
+|---|---|---|
+| 服务起在奇怪端口（如 61099）或报 `Port xxx already in use` | 宿主环境变量 `SERVER_PORT` / `SERVER__PORT` **覆盖了 yml 的 server.port** | 启动前 `unset SERVER_PORT SERVER__PORT`，或显式加 `--server.port=8082`（命令行优先级最高） |
+| `mvn` 报 `ClassNotFoundException: ...classworlds.launcher.Launcher` | 本机 maven wrapper 损坏 | 用一个可用的 Maven 安装（或直接用 IDEA 内置 Maven）；`scripts/run-dev.sh` 用已打好的可执行 jar，绕开 maven |
+| `docker compose up` 报容器名已存在 | 与本机其他项目重名 | 本项目容器/卷统一带 `herbmind-v2` 前缀，已隔离 |
+| 跑种子报 `ModuleNotFoundError: psycopg2` | 未装依赖 | `cd database/etl && pip install -r requirements.txt` |
+| 想用 `java -jar` 但 jar 不是可执行 | 父 POM 非 `spring-boot-starter-parent`，需显式绑定 `repackage` | 已在 `backend/pom.xml` 的 pluginManagement 里绑定 |
+
+## 启动顺序小结
+
+```
+中间件(PG/Neo4j/Redis/Nacos) → 建表(自动) → 种子(seed_books → import_formula) → 建图(build_graph)
+                              → svc-catalog:8082 → bff:8090 → gateway:8080
+                              → 验证：curl localhost:8090/api/biz/library/tree?bookId=sh
+                              → 冒烟：python scripts/smoke.py
+```
