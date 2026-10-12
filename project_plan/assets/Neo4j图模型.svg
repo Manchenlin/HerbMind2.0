@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 480" font-family="'Noto Sans SC','Microsoft YaHei',system-ui,sans-serif">
+  <style>
+    .bg{fill:#FAFAF8}
+    .title{fill:#1F2328;font-size:19px;font-weight:800}
+    .sub{fill:#6B7280;font-size:12.5px}
+    .edge{stroke:#A9B4AD;stroke-width:1.6;fill:none}
+    .el{fill:#5A6470;font-size:11px}
+    .node{stroke-width:1.6;rx:10}
+    .nt{font-size:12.5px;font-weight:700}
+    .f{fill:#2E7D6F}.h{fill:#3B7DD8}.s{fill:#D9724E}.c{fill:#7A6BB5}.q{fill:#C8A96A}.x{fill:#4F8A8B}.t{fill:#8A6D3B}
+  </style>
+  <rect class="bg" x="0" y="0" width="860" height="480"/>
+  <text class="title" x="30" y="42">Neo4j 知识图谱模型（以 Formula 为中心）</text>
+  <text class="sub" x="30" y="63">节点标签 · 关系类型 · 由 PostgreSQL 关系表 ETL 派生</text>
+
+  <!-- edges -->
+  <line class="edge" x1="430" y1="240" x2="240" y2="140"/>
+  <line class="edge" x1="430" y1="240" x2="620" y2="140"/>
+  <line class="edge" x1="430" y1="240" x2="720" y2="250"/>
+  <line class="edge" x1="430" y1="240" x2="620" y2="370"/>
+  <line class="edge" x1="430" y1="240" x2="430" y2="400"/>
+  <line class="edge" x1="430" y1="240" x2="180" y2="290"/>
+  <line class="edge" x1="430" y1="240" x2="180" y2="380"/>
+
+  <text class="el" x="300" y="180">COMPOSED_OF</text>
+  <text class="el" x="560" y="180">INDICATES</text>
+  <text class="el" x="600" y="230">PRIMARY_FORMULA</text>
+  <text class="el" x="560" y="320">CORRESPONDS</text>
+  <text class="el" x="440" y="330">OF_CLASSIC</text>
+  <text class="el" x="250" y="255">MODIFIES</text>
+  <text class="el" x="250" y="345">SIMILAR_TO</text>
+
+  <!-- center -->
+  <rect class="node f" x="360" y="212" width="150" height="56" fill="#E6F2EF" stroke="#2E7D6F"/>
+  <text class="nt" x="435" y="236" text-anchor="middle" style="fill:#1F5C52">:Formula</text>
+  <text class="el" x="435" y="253" text-anchor="middle">方剂（name/efficacy/page）</text>
+
+  <!-- top-left Herb -->
+  <rect class="node h" x="150" y="112" width="140" height="52" fill="#EAF2FC" stroke="#3B7DD8"/>
+  <text class="nt" x="220" y="134" text-anchor="middle" style="fill:#2A5DA0">:Herb</text>
+  <text class="el" x="220" y="151" text-anchor="middle">药（四气五味）</text>
+
+  <!-- top-right Syndrome -->
+  <rect class="node s" x="560" y="112" width="150" height="52" fill="#FBEDE7" stroke="#D9724E"/>
+  <text class="nt" x="635" y="134" text-anchor="middle" style="fill:#B4552F">:Syndrome</text>
+  <text class="el" x="635" y="151" text-anchor="middle">证候（六经/卫气营血）</text>
+
+  <!-- right Case -->
+  <rect class="node c" x="650" y="224" width="140" height="52" fill="#EFECF8" stroke="#7A6BB5"/>
+  <text class="nt" x="720" y="246" text-anchor="middle" style="fill:#5B4E92">:Case</text>
+  <text class="el" x="720" y="263" text-anchor="middle">案例</text>
+
+  <!-- bottom-right Quote -->
+  <rect class="node q" x="560" y="346" width="150" height="52" fill="#F6F0E0" stroke="#C8A96A"/>
+  <text class="nt" x="635" y="368" text-anchor="middle" style="fill:#8A6D3B">:Quote</text>
+  <text class="el" x="635" y="385" text-anchor="middle">经典条文</text>
+
+  <!-- bottom Classic -->
+  <rect class="node" x="360" y="388" width="140" height="52" fill="#EDEFEE" stroke="#6B7280"/>
+  <text class="nt" x="430" y="410" text-anchor="middle" style="fill:#4A5158">:Classic</text>
+  <text class="el" x="430" y="427" text-anchor="middle">经典著作</text>
+
+  <!-- left Symptom -->
+  <rect class="node x" x="60" y="264" width="130" height="52" fill="#E9F3F2" stroke="#4F8A8B"/>
+  <text class="nt" x="125" y="286" text-anchor="middle" style="fill:#376566">:Symptom</text>
+  <text class="el" x="125" y="303" text-anchor="middle">症状 / 舌脉</text>
+
+  <!-- left bottom Formula (similar) -->
+  <rect class="node f" x="60" y="352" width="150" height="52" fill="#E6F2EF" stroke="#2E7D6F"/>
+  <text class="nt" x="135" y="374" text-anchor="middle" style="fill:#1F5C52">:Formula（相似/加减）</text>
+  <text class="el" x="135" y="391" text-anchor="middle">SIMILAR_TO / MODIFIES</text>
+
+  <text class="sub" x="30" y="462">其它关系：CONTAINS / HAS_CATEGORY / INCLUDES · DIAGNOSED_AS / MANIFESTS / CITES · CO_OCCURS / PREREQUISITE / FOR</text>
+</svg>

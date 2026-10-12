@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>治理后台 · HerbMind</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / 治理后台</div>
+  <h1 class="serif" style="margin-bottom:6px">数据治理后台</h1>
+  <p class="muted" style="margin-bottom:22px">内容校验流转 · 复核工单 · OCR 疑点 · 操作留痕。</p>
+
+  <section class="grid cols-4 stagger" style="margin-bottom:24px">
+    <div class="stat"><div class="n"><span data-count="12">0</span></div><div class="l">待复核</div></div>
+    <div class="stat"><div class="n"><span data-count="27">0</span></div><div class="l">OCR 疑点</div></div>
+    <div class="stat"><div class="n"><span data-count="523">0</span></div><div class="l">已发布条目</div></div>
+    <div class="stat"><div class="n"><span data-count="97">0</span>%</div><div class="l">结构化覆盖率</div></div>
+  </section>
+
+  <div class="grid cols-2" style="align-items:start">
+    <section class="card">
+      <h3 style="margin-bottom:14px">待复核内容</h3>
+      <table class="tb">
+        <thead><tr><th>条目</th><th>类型</th><th>章节</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr><td>麻黄汤证 · 案例二</td><td><span class="badge warn">案例</span></td><td>伤寒·太阳病</td><td><button class="btn ghost sm" onclick="toast('已通过')">通过</button> <button class="btn ghost sm" onclick="toast('已驳回')">驳回</button></td></tr>
+          <tr><td>葛根汤 剂量</td><td><span class="badge info">方剂</span></td><td>伤寒·太阳病</td><td><button class="btn ghost sm" onclick="toast('已通过')">通过</button> <button class="btn ghost sm" onclick="toast('已驳回')">驳回</button></td></tr>
+          <tr><td>白虎汤证 · 按语</td><td><span class="badge warn">案例</span></td><td>温病·气分</td><td><button class="btn ghost sm" onclick="toast('已通过')">通过</button> <button class="btn ghost sm" onclick="toast('已驳回')">驳回</button></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h3 style="margin-bottom:14px">OCR 疑点清单</h3>
+      <div class="stagger" style="display:grid;gap:10px">
+        <div class="rowitem"><span class="thumb" style="background:var(--error-soft);color:#9A2F26">字</span><div style="flex:1"><b>异体字：芎劳</b><div class="muted">疑为「川芎」· 第 214 页</div></div><span class="badge err">待处理</span></div>
+        <div class="rowitem"><span class="thumb" style="background:var(--warning-soft);color:#9A6E14">量</span><div style="flex:1"><b>「各等分」剂量未结构化</b><div class="muted">约 12 条 · 批 3/7/9</div></div><span class="badge warn">待处理</span></div>
+        <div class="rowitem"><span class="thumb" style="background:var(--warning-soft);color:#9A6E14">名</span><div style="flex:1"><b>大/小青龙汤 名称缩写</b><div class="muted">需展开为全称</div></div><span class="badge warn">待处理</span></div>
+        <div class="rowitem"><span class="thumb" style="background:var(--success-soft);color:#1E7A50">粘</span><div style="flex:1"><b>当归芍药散 案例粘连</b><div class="muted">已修复</div></div><span class="badge ok">已处理</span></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:20px">
+    <h3 style="margin-bottom:14px">操作审计（verify_log 摘要）</h3>
+    <table class="tb">
+      <thead><tr><th>时间</th><th>操作者</th><th>动作</th><th>对象</th></tr></thead>
+      <tbody>
+        <tr><td>今天 20:02</td><td>admin</td><td><span class="badge ok">通过</span></td><td>桂枝汤证 · 案例一</td></tr>
+        <tr><td>今天 19:40</td><td>admin</td><td><span class="badge err">驳回</span></td><td>某方 · 剂量解析</td></tr>
+        <tr><td>昨天 16:11</td><td>editor01</td><td><span class="badge info">提交复核</span></td><td>白虎汤证 · 按语</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

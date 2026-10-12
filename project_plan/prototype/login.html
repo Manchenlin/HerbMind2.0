@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>登录 · HerbMind 本草心智</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+
+<div class="auth">
+  <!-- 品牌侧 -->
+  <aside class="auth-brand">
+    <div class="logo-lg">H</div>
+    <h1>一图见方证，<br>一问解经义，一练成明医。</h1>
+    <p>可插拔的多语料中医知识平台 —— 以《中医经典方证案例研究》为首个语料，已接入《伤寒论》原文。</p>
+    <div class="feats">
+      <div>◆ 多维检索 · 语义问答（Agent 可溯源）</div>
+      <div>◆ 先思后看 · AI 评分 · 错题本</div>
+      <div>◆ 方-证-药-症 知识图谱 · 可插拔书架</div>
+    </div>
+  </aside>
+
+  <!-- 表单侧 -->
+  <main class="auth-form">
+    <div class="inner">
+      <div class="pill-tabs" id="authTabs" style="margin-bottom:20px">
+        <button class="active" data-panel="login">登录</button>
+        <button data-panel="reg">注册</button>
+      </div>
+
+      <!-- 登录 -->
+      <form data-panel="login" onsubmit="doAuth('登录');return false;">
+        <div class="field">
+          <label>用户名 / 邮箱</label>
+          <input class="input" placeholder="请输入用户名" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>密码</label>
+          <input class="input" type="password" placeholder="请输入密码" autocomplete="current-password">
+        </div>
+        <button class="btn primary" type="submit" style="width:100%;justify-content:center;margin-top:6px">登录</button>
+        <div class="form-hint">原型演示：任意用户名 / 密码即可进入</div>
+        <div class="form-hint">演示账号：<span class="mono">smoke_demo / Smoke@1234</span></div>
+        <div class="center" style="margin-top:16px">
+          <a class="btn ghost sm" href="index.html">先逛逛，跳过登录 →</a>
+        </div>
+      </form>
+
+      <!-- 注册 -->
+      <form data-panel="reg" style="display:none" onsubmit="doAuth('注册');return false;">
+        <div class="field"><label>用户名</label><input class="input" placeholder="设置用户名"></div>
+        <div class="field"><label>昵称</label><input class="input" placeholder="展示用昵称（可选）"></div>
+        <div class="field"><label>密码</label><input class="input" type="password" placeholder="设置密码"></div>
+        <div class="field"><label>确认密码</label><input class="input" type="password" placeholder="再次输入密码"></div>
+        <label class="muted" style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;margin:4px 0 12px">
+          <input type="checkbox" style="margin-top:3px"> 我已阅读并同意《用户协议》与《隐私政策》
+        </label>
+        <button class="btn primary" type="submit" style="width:100%;justify-content:center">注册并登录</button>
+        <div class="form-hint">注册后即可以「学习者」身份开始练习</div>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script src="assets/mock.js"></script>
+<script>
+  function doAuth(what){
+    toast(what + '成功，正在进入…');
+    setTimeout(function(){ location.href = 'index.html'; }, 700);
+  }
+</script>
+<script src="assets/app.js"></script>
+</body>
+</html>

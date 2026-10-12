@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>知识图谱 · HerbMind</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / 图谱</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <h1 class="serif" style="font-size:24px">知识图谱探索</h1>
+    <a class="chip clickable" href="graph-map.html">方证相似度地图 →</a>
+  </div>
+
+  <div class="card" style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <span class="muted" style="margin-right:6px">筛选：</span>
+    <span class="chip clickable sel">方剂</span>
+    <span class="chip clickable sel">药味</span>
+    <span class="chip clickable sel">证候</span>
+    <span class="chip clickable sel">症状</span>
+    <span class="chip clickable">条文</span>
+    <span class="chip clickable">经典</span>
+    <span class="spacer" style="flex:1"></span>
+    <button class="btn ghost sm" onclick="toast('已随机重排布局')">重新布局</button>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <svg id="graph" viewBox="0 0 860 560" style="width:100%;display:block;background:linear-gradient(135deg,#FBFCFB,#F5F7F6)"></svg>
+  </div>
+  <p class="muted" style="margin-top:10px">提示：点击节点查看详情；悬停可高亮邻居。当前展示「麻黄汤」1~2 跳邻居子图（原型示意）。</p>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    var svg = document.getElementById('graph');
+    var NS='http://www.w3.org/2000/svg';
+    var colors = { Formula:{f:'#E6F2EF',s:'#2E7D6F',t:'#1F5C52'},
+                   Herb:{f:'#EAF2FC',s:'#3B7DD8',t:'#2A5DA0'},
+                   Syndrome:{f:'#FBEDE7',s:'#D9724E',t:'#B4552F'},
+                   Symptom:{f:'#E9F3F2',s:'#4F8A8B',t:'#376566'} };
+    var byId = {}; MOCK.graph.nodes.forEach(function(n){ byId[n.id]=n; });
+    var s='';
+    MOCK.graph.edges.forEach(function(e){
+      var a=byId[e[0]], b=byId[e[1]]; if(!a||!b) return;
+      s += '<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#C9CFC9" stroke-width="1.4"/>';
+    });
+    MOCK.graph.nodes.forEach(function(n){
+      var c = colors[n.label]||colors.Symptom;
+      s += '<g class="gnode" style="cursor:pointer;animation:fadeup .5s '+(n.x/1500)+'s both" onclick="nodeInfo(\''+n.id+'\')">'+
+           '<circle cx="'+n.x+'" cy="'+n.y+'" r="'+n.r+'" fill="'+c.f+'" stroke="'+c.s+'" stroke-width="2"/>'+
+           '<text x="'+n.x+'" y="'+(n.y+4)+'" text-anchor="middle" font-size="11.5" fill="'+c.t+'">'+n.name+'</text>'+
+           '<title>'+n.label+' · '+n.name+'</title></g>';
+    });
+    svg.innerHTML = s;
+    // hover 高亮
+    svg.querySelectorAll('.gnode').forEach(function(g){
+      g.addEventListener('mouseenter', function(){ g.querySelector('circle').setAttribute('r', +g.querySelector('circle').getAttribute('r')*1.15); });
+      g.addEventListener('mouseleave', function(){ g.querySelector('circle').setAttribute('r', (+g.querySelector('circle').getAttribute('r')/1.15)); });
+    });
+  });
+  function nodeInfo(id){
+    var n = MOCK.graph.nodes.find(function(x){return x.id===id;});
+    openDrawer('<h3 style="margin-bottom:8px">'+n.name+'</h3>'+
+      '<div class="chip primary">'+n.label+'</div>'+
+      '<p class="muted" style="margin-top:12px">节点类型：'+n.label+'<br>相关度／度数：示意</p>'+
+      '<div class="hr"></div>'+
+      '<a class="btn primary sm" href="formula.html">查看方剂详情 →</a>'+
+      '<a class="btn ghost sm" style="margin-left:8px" href="ask.html">就此提问 →</a>');
+  }
+</script>
+<script src="assets/app.js"></script>
+</body>
+</html>

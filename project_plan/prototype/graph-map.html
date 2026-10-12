@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>方证相似度地图 · HerbMind</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / <a href="graph.html">图谱</a> / 相似度地图</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div>
+      <h1 class="serif" style="font-size:24px">方证相似度地图</h1>
+      <p class="muted" style="margin-top:4px">方剂按药味/证候向量降维投影到 2D，邻近者相似，聚成「方剂星系」。</p>
+    </div>
+    <a class="chip clickable" href="graph.html">← 返回图谱</a>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <svg id="map" viewBox="0 0 860 540" style="width:100%;display:block;background:radial-gradient(circle at 40% 40%,#FBFCFB,#EFF3F1)"></svg>
+  </div>
+  <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap" class="muted">
+    <span>● 麻黄类（辛温解表）</span><span>● 桂枝类（调和营卫）</span><span>● 清热类</span><span>● 补益类</span>
+  </div>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    // 模拟聚类星系
+    var clusters = [
+      { c:'#2E7D6F', cx:250, cy:200, pts:[['麻黄汤',34],['葛根汤',28],['大青龙汤',24],['小青龙汤',24],['麻黄附子细辛汤',20]] },
+      { c:'#3B7DD8', cx:560, cy:170, pts:[['桂枝汤',32],['桂枝加葛根汤',24],['桂枝加厚朴杏子汤',22],['桂枝新加汤',20]] },
+      { c:'#D9724E', cx:600, cy:400, pts:[['白虎汤',26],['白虎加人参汤',22],['竹叶石膏汤',20]] },
+      { c:'#C8A96A', cx:250, cy:400, pts:[['理中丸',26],['四逆汤',22],['真武汤',22],['小建中汤',20]] }
+    ];
+    var svg = document.getElementById('map'), s='';
+    clusters.forEach(function(cl){
+      cl.pts.forEach(function(p){
+        var x = cl.cx + (Math.random()-0.5)*180, y = cl.cy + (Math.random()-0.5)*140;
+        s += '<g class="gnode" style="cursor:pointer;animation:fadeup .6s both" onclick="openDrawer(\'<h3>'+p[0]+'</h3><p class=muted style=margin-top:8px>所属星系相似簇；点击查看方剂详情</p><a class=btn primary sm href=formula.html>查看方剂详情 →</a>\')">'+
+             '<circle cx="'+x.toFixed(0)+'" cy="'+y.toFixed(0)+'" r="'+p[1]+'" fill="'+cl.c+'22" stroke="'+cl.c+'" stroke-width="1.6"/>'+
+             '<text x="'+x.toFixed(0)+'" y="'+(y+4).toFixed(0)+'" text-anchor="middle" font-size="11" fill="#1F2328">'+p[0]+'</text></g>';
+      });
+    });
+    svg.innerHTML = s;
+    svg.querySelectorAll('.gnode circle').forEach(function(c){
+      c.addEventListener('mouseenter', function(){ c.setAttribute('opacity','0.7'); });
+      c.addEventListener('mouseleave', function(){ c.setAttribute('opacity','1'); });
+    });
+  });
+</script>
+<script src="assets/app.js"></script>
+</body>
+</html>

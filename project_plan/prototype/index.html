@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>首页 · HerbMind 本草心智</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <!-- Hero -->
+  <section class="hero">
+    <h1>一图见方证，一问解经义，一练成明医。</h1>
+    <p>一个可插拔的多语料中医知识平台（首个语料《中医经典方证案例研究》，已接入《伤寒论》原文），由 AI Agent 驱动，做经方检索 · 临床思维练习 · 科研挖掘。
+       <span class="slogan">让方证知识可查、可练、可问、可推演、可看见。</span></p>
+    <form class="hero-search" onsubmit="location.href='search.html';return false;">
+      <input class="input" placeholder="试试：“无汗而喘、脉浮紧用什么方” / “桂枝汤的组成”" aria-label="语义检索">
+      <button class="btn primary" type="submit">智能检索</button>
+    </form>
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+      <a class="chip clickable" href="search.html">无汗而喘</a>
+      <a class="chip clickable" href="search.html">太阳中风</a>
+      <a class="chip clickable" href="search.html">项背强几几</a>
+      <a class="chip clickable" href="search.html">脉浮紧</a>
+    </div>
+  </section>
+
+  <!-- 数据概览 -->
+  <section class="grid cols-4 stagger" style="margin-top:22px">
+    <div class="stat"><div class="n"><span data-count="535">0</span></div><div class="l">结构化方证条目</div></div>
+    <div class="stat"><div class="n"><span data-count="245">0</span></div><div class="l">方剂</div></div>
+    <div class="stat"><div class="n"><span data-count="290">0</span></div><div class="l">医案</div></div>
+    <div class="stat"><div class="n"><span data-count="2">0</span></div><div class="l">已接入语料（可扩展）</div></div>
+  </section>
+
+  <!-- 语料库（插拔式） -->
+  <section class="card" style="margin-top:22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div>
+      <b>语料库（插拔式）</b>
+      <div class="muted">同一套骨架适配多类书籍 · 已接入 2 部，可扩展</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="chip primary">中医经典方证案例研究</span>
+      <span class="chip gold">伤寒论 · 整理中</span>
+      <span class="chip">金匮要略 · 规划中</span>
+      <span class="chip">神农本草经 · 规划中</span>
+    </div>
+    <a class="btn ghost sm" style="margin-left:auto" href="shelf.html">进入书架 →</a>
+  </section>
+
+  <!-- 今日方证 + 图谱预览 -->
+  <section class="grid cols-2" style="margin-top:26px">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3>今日方证 · 麻黄汤</h3>
+        <span class="chip primary">太阳伤寒类方证</span>
+      </div>
+      <p class="muted" style="margin:8px 0 14px">发汗解表，宣肺平喘。主治外感风寒表实证：无汗而喘、脉浮紧。</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <span class="chip">麻黄<span class="role jun">君</span></span>
+        <span class="chip">桂枝<span class="role chen">臣</span></span>
+        <span class="chip">杏仁<span class="role zuo">佐</span></span>
+        <span class="chip">炙甘草<span class="role shi">使</span></span>
+      </div>
+      <div class="cite"><div><div>太阳病，头痛发热，身疼腰痛，骨节疼痛，恶风，无汗而喘者，麻黄汤主之。</div>
+        <div class="pg">《伤寒论》· 第 35 条 · 第 19 页</div></div></div>
+      <div style="margin-top:16px;display:flex;gap:10px">
+        <a class="btn primary sm" href="formula.html">查看方剂详情</a>
+        <a class="btn ghost sm" href="train.html">开始练习</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3>知识图谱 · 预览</h3>
+        <a class="chip clickable" href="graph.html">进入图谱 ↗</a>
+      </div>
+      <svg viewBox="0 0 480 300" style="width:100%;height:auto;margin-top:6px">
+        <line x1="240" y1="150" x2="120" y2="70" stroke="#C9CFC9"/>
+        <line x1="240" y1="150" x2="360" y2="70" stroke="#C9CFC9"/>
+        <line x1="240" y1="150" x2="120" y2="240" stroke="#C9CFC9"/>
+        <line x1="240" y1="150" x2="360" y2="240" stroke="#C9CFC9"/>
+        <line x1="240" y1="150" x2="240" y2="60" stroke="#C9CFC9"/>
+        <circle cx="240" cy="150" r="30" fill="#E6F2EF" stroke="#2E7D6F" stroke-width="2"/>
+        <text x="240" y="155" text-anchor="middle" font-size="12" fill="#1F5C52">麻黄汤</text>
+        <circle cx="120" cy="70" r="18" fill="#EAF2FC" stroke="#3B7DD8"/>
+        <text x="120" y="74" text-anchor="middle" font-size="11" fill="#2A5DA0">麻黄</text>
+        <circle cx="360" cy="70" r="18" fill="#EAF2FC" stroke="#3B7DD8"/>
+        <text x="360" y="74" text-anchor="middle" font-size="11" fill="#2A5DA0">桂枝</text>
+        <circle cx="120" cy="240" r="24" fill="#E9F3F2" stroke="#4F8A8B"/>
+        <text x="120" y="244" text-anchor="middle" font-size="11" fill="#376566">无汗</text>
+        <circle cx="360" cy="240" r="24" fill="#E9F3F2" stroke="#4F8A8B"/>
+        <text x="360" y="244" text-anchor="middle" font-size="11" fill="#376566">脉浮紧</text>
+        <circle cx="240" cy="60" r="26" fill="#FBEDE7" stroke="#D9724E"/>
+        <text x="240" y="64" text-anchor="middle" font-size="11" fill="#B4552F">表实证</text>
+      </svg>
+      <p class="muted">方-药-证-症 关系网络，可逐层展开、多跳探索。</p>
+    </div>
+  </section>
+
+  <!-- 快捷入口 -->
+  <h2 class="section-title"><span class="dot"></span>核心功能</h2>
+  <section class="grid cols-4 stagger">
+    <a class="card link" href="search.html"><h3>多维检索</h3><p class="muted">方名 / 证候 / 症状 / 药味 / 条文多维组合，支持自然语言语义检索。</p></a>
+    <a class="card link" href="train.html"><h3>先思后看练习</h3><p class="muted">看案例先辨证处方，AI 自动评分，逐条点评，错题自动归集。</p></a>
+    <a class="card link" href="graph.html"><h3>知识图谱</h3><p class="muted">方-证-药-症 可视化探索、方证相似度地图、跨经典对照。</p></a>
+    <a class="card link" href="ask.html"><h3>AI 智能问答</h3><p class="muted">多工具 Agent 问答，展示推理轨迹，引用可溯源到原典页码。</p></a>
+  </section>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

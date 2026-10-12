@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智能问答 · HerbMind</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / 智能问答</div>
+  <h1 class="serif" style="font-size:24px;margin-bottom:14px">AI 智能问答 <span class="chip primary" style="font-size:12px;vertical-align:middle">LangChain 1.x · 多工具 Agent</span></h1>
+
+  <div class="grid" style="grid-template-columns:220px 1fr 300px">
+    <!-- 会话列表 -->
+    <aside class="card" style="align-self:start">
+      <button class="btn primary sm" style="width:100%" onclick="toast('新会话')">＋ 新会话</button>
+      <div style="margin-top:12px;display:grid;gap:6px;font-size:13.5px">
+        <div class="rowitem" style="padding:8px 10px;border-color:#DDE7E2"><div>桂枝汤与麻黄汤鉴别</div></div>
+        <div class="rowitem" style="padding:8px 10px"><div>少阳病治法</div></div>
+        <div class="rowitem" style="padding:8px 10px"><div>白虎汤使用时机</div></div>
+      </div>
+    </aside>
+
+    <!-- 对话 -->
+    <section class="card" style="padding:0">
+      <div style="padding:20px;display:flex;flex-direction:column;gap:16px;min-height:520px" id="chat">
+        <div class="bubble me">无汗而喘、脉浮紧用什么方？</div>
+
+        <div>
+          <details class="toolcard" open>
+            <summary><span class="spin" style="animation:none;border-top-color:#2E7D6F"></span> 工具调用轨迹 · 3 步 <span class="muted">(点击折叠)</span></summary>
+            <div class="toolstep"><span class="k">search_formula</span><span class="muted">query="无汗而喘 脉浮紧" → 命中 麻黄汤 / 葛根汤</span></div>
+            <div class="toolstep"><span class="k">graph_neighbors</span><span class="muted">entity="麻黄汤" hops=1 → 兼证、加减方</span></div>
+            <div class="toolstep"><span class="k">herb_statistics</span><span class="muted">scope="太阳伤寒类方证" → 麻黄出现 4 次</span></div>
+          </details>
+
+          <div class="bubble ai typing" id="answer">
+            无汗而喘、脉浮紧属<b>太阳伤寒表实证</b>，当用<b>麻黄汤</b>发汗解表、宣肺平喘……
+          </div>
+          <div id="cites" style="display:none;margin-top:12px">
+            <div class="cite" style="margin-bottom:8px"><div>
+              <div>太阳病，头痛发热，身疼腰痛，骨节疼痛，恶风，无汗而喘者，麻黄汤主之。</div>
+              <div class="pg">《伤寒论》· 第 35 条 · 第 19 页 · <a href="quote.html">跳原文 ↗</a></div></div></div>
+            <div class="cite"><div>
+              <div>麻黄汤证 · 案例一：徐某，男，23 岁……脉浮紧。</div>
+              <div class="pg">《中医经典方证案例研究》· 第 19 页 · <a href="case.html">跳原文 ↗</a></div></div></div>
+          </div>
+        </div>
+
+        <div class="bubble me" style="margin-top:6px">若兼项背强几几呢？</div>
+        <div>
+          <details class="toolcard">
+            <summary>工具调用轨迹 · 2 步</summary>
+            <div class="toolstep"><span class="k">graph_neighbors</span><span class="muted">"麻黄汤" → MODIFIES → 葛根汤</span></div>
+            <div class="toolstep"><span class="k">formula_diff</span><span class="muted">base=麻黄汤, add=[葛根] → 功效转为升津舒筋</span></div>
+          </details>
+          <div class="bubble ai">兼项背强几几者，为太阳伤寒兼经输不利，于麻黄汤中加<b>葛根</b>，即<b>葛根汤</b>，解表之外兼升津舒筋。</div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding:14px;display:flex;gap:10px">
+        <input class="input" placeholder="继续追问，例如：“为什么不用桂枝汤？”" id="qin">
+        <button class="btn primary" onclick="toast('（原型示意）')">发送</button>
+      </div>
+    </section>
+
+    <!-- 联动 -->
+    <aside style="display:grid;gap:16px;align-self:start">
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:10px">相关方证</h3>
+        <a class="rowitem" href="formula.html" style="padding:10px;margin-bottom:8px"><span class="thumb" style="width:36px;height:36px;font-size:13px">麻</span><div><b>麻黄汤</b><div class="muted">太阳伤寒表实证</div></div></a>
+        <a class="rowitem" href="formula.html" style="padding:10px"><span class="thumb" style="width:36px;height:36px;font-size:13px">葛</span><div><b>葛根汤</b><div class="muted">太阳兼项背强</div></div></a>
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:8px">联动图谱</h3>
+        <svg viewBox="0 0 260 150" style="width:100%">
+          <line x1="130" y1="75" x2="50" y2="35" stroke="#C9CFC9"/><line x1="130" y1="75" x2="210" y2="35" stroke="#C9CFC9"/><line x1="130" y1="75" x2="130" y2="130" stroke="#C9CFC9"/>
+          <circle cx="130" cy="75" r="20" fill="#E6F2EF" stroke="#2E7D6F" stroke-width="2"/><text x="130" y="79" text-anchor="middle" font-size="10" fill="#1F5C52">麻黄汤</text>
+          <circle cx="50" cy="35" r="14" fill="#EAF2FC" stroke="#3B7DD8"/><text x="50" y="39" text-anchor="middle" font-size="9" fill="#2A5DA0">麻黄</text>
+          <circle cx="210" cy="35" r="14" fill="#EAF2FC" stroke="#3B7DD8"/><text x="210" y="39" text-anchor="middle" font-size="9" fill="#2A5DA0">桂枝</text>
+          <circle cx="130" cy="130" r="16" fill="#FBEDE7" stroke="#D9724E"/><text x="130" y="134" text-anchor="middle" font-size="9" fill="#B4552F">表实</text>
+        </svg>
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:6px">跟诊剧本杀</h3>
+        <p class="muted" style="font-size:13px">让 Agent 扮患者多轮陈述，你来辨证处方。</p>
+        <button class="btn primary sm" style="margin-top:10px" onclick="toast('进入跟诊剧本杀（示意）')">开始一局</button>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    var ans = document.getElementById('answer');
+    var full = ans.innerHTML, i = 0;
+    ans.innerHTML = '';
+    ans.classList.add('typing');
+    var t = setInterval(function(){
+      i += 3;
+      ans.innerHTML = full.slice(0, i);
+      if (i >= full.length) { clearInterval(t); ans.classList.remove('typing'); document.getElementById('cites').style.display=''; }
+    }, 22);
+  });
+</script>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的 · HerbMind</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / 我的</div>
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px">
+    <div style="width:56px;height:56px;border-radius:16px;background:var(--primary-soft);color:var(--primary-deep);display:grid;place-items:center;font-weight:800;font-size:22px">我</div>
+    <div><h1 class="serif" style="font-size:22px">学习者 · 小林</h1><div class="muted">本学期目标：掌握《伤寒论》太阳篇 30 个方证</div></div>
+  </div>
+
+  <section class="grid cols-4 stagger" style="margin-bottom:26px">
+    <div class="stat"><div class="n"><span data-count="126">0</span>h</div><div class="l">累计学习时长</div></div>
+    <div class="stat"><div class="n"><span data-count="7">0</span>天</div><div class="l">连续打卡</div></div>
+    <div class="stat"><div class="n"><span data-count="73">0</span>%</div><div class="l">综合掌握度</div></div>
+    <div class="stat"><div class="n"><span data-count="48">0</span></div><div class="l">已点亮的方证节点</div></div>
+  </section>
+
+  <div class="grid" style="grid-template-columns:320px 1fr">
+    <section class="card">
+      <h3 style="margin-bottom:6px">能力雷达</h3>
+      <svg id="radar" viewBox="0 0 300 300" style="width:100%"></svg>
+      <a class="btn ghost sm" style="width:100%" href="profile.html">查看完整学习档案 →</a>
+    </section>
+
+    <section style="display:grid;gap:16px">
+      <div class="card">
+        <h3 style="margin-bottom:12px">快捷入口</h3>
+        <div class="grid cols-3">
+          <a class="rowitem" href="favorites.html"><span class="thumb">★</span><div><b>收藏夹</b><div class="muted">32 条</div></div></a>
+          <a class="rowitem" href="favorites.html"><span class="thumb">✎</span><div><b>我的笔记</b><div class="muted">18 条</div></div></a>
+          <a class="rowitem" href="train.html"><span class="thumb">✗</span><div><b>错题本</b><div class="muted">6 题待复习</div></div></a>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px">成长时间轴</h3>
+        <div class="timeline">
+          <div class="ev"><b>今天</b> · 掌握「麻黄汤证」，图谱节点已点亮</div>
+          <div class="ev"><b>昨天</b> · 完成 10 题练习，平均 82 分</div>
+          <div class="ev"><b>10-09</b> · 收藏「桂枝汤」并写下笔记</div>
+          <div class="ev"><b>10-07</b> · 开始学习《伤寒论》太阳篇</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    var svg = document.getElementById('radar'), data = MOCK.radar, N=data.length, cx=150, cy=150, R=100;
+    function pt(i,r){ var a=-Math.PI/2+i*2*Math.PI/N; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; }
+    var s='';
+    [0.5,1].forEach(function(k){ s+='<polygon class="radar-ring" points="'+data.map(function(_,i){return pt(i,R*k).join(',');}).join(' ')+'"/>'; });
+    data.forEach(function(d,i){ var p=pt(i,R); s+='<line x1="'+cx+'" y1="'+cy+'" x2="'+p[0]+'" y2="'+p[1]+'" stroke="#ECECE8"/>';
+      var lp=pt(i,R+20); s+='<text x="'+lp[0]+'" y="'+lp[1]+'" text-anchor="middle" font-size="10.5" fill="#6B7280">'+d.k+'</text>'; });
+    s+='<polygon class="radar-shape" points="'+data.map(function(d,i){return pt(i,R*d.v/100).join(',');}).join(' ')+'"/>';
+    svg.innerHTML=s;
+  });
+</script>
+<script src="assets/app.js"></script>
+</body>
+</html>

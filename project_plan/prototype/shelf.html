@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>书架 · 语料库 · HerbMind</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / 书架</div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 class="serif" style="margin-bottom:6px">书架 · 语料库</h1>
+      <p class="muted">插拔式语料：平台以同一套骨架适配多类书籍，新书接入 = 注册 + 跑导入，不改系统。</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a class="btn primary sm" href="import.html">＋ 导入语料</a>
+      <a class="btn ghost sm" href="library.html">进入当前语料 →</a>
+    </div>
+  </div>
+
+  <div class="grid cols-3 stagger" id="shelf" style="margin-top:22px"></div>
+
+  <div class="card" style="margin-top:26px">
+    <h3 style="margin-bottom:10px">插拔机制</h3>
+    <p class="muted">① 注册 <span class="mono">book</span>（书名 / 类型 / 版权 / 状态）→ ② 通用导入器解析为 <span class="mono">book_node</span> 目录 → ③ 按类型写入特化实体（方证 / 本草 / 药品 / 医案）→ ④ 登记 <span class="mono">content_unit</span>（向量 + 全文）→ ⑤ 按统一本体建图。
+      详见计划文档 <a href="../14_插拔式书籍扩展方案.md" style="color:var(--primary)">14 · 插拔式书籍扩展方案</a>。</p>
+  </div>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    var covers = ['linear-gradient(135deg,#2E7D6F,#1F5C52)','linear-gradient(135deg,#3B7DD8,#2A5DA0)',
+                  'linear-gradient(135deg,#C8A96A,#8A6D3B)','linear-gradient(135deg,#7A6BB5,#5B4E92)',
+                  'linear-gradient(135deg,#4F8A8B,#376566)'];
+    var box = document.getElementById('shelf');
+    box.innerHTML = MOCK.books.map(function(b, i){
+      var planned = b.status.indexOf('规划') >= 0;
+      var dot = planned ? '#B4B2A9' : (b.status.indexOf('整理') >= 0 ? '#D9A441' : '#2E9E6B');
+      var badge = planned ? '<span class="chip">规划中</span>'
+                  : (b.status.indexOf('整理') >= 0 ? '<span class="chip gold">整理中</span>' : '<span class="chip primary">已发布</span>');
+      var short = b.title.length > 6 ? b.title.slice(0,4) : b.title;
+      var btn = planned
+        ? '<button class="btn ghost sm" disabled style="opacity:.6;cursor:not-allowed">敬请期待</button>'
+        : '<a class="btn primary sm" href="library.html">进入</a>';
+      return '<div class="bookcard ' + (planned ? 'dim' : '') + '">' +
+        '<div class="bookcover" style="background:' + covers[i % covers.length] + '">' + short + '</div>' +
+        '<div><div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+          '<b>' + b.title + '</b>' + badge + '</div>' +
+          '<div class="meta" style="margin-top:6px">' + b.type + '</div>' +
+          '<div class="meta">' + b.author + ' · ' + b.dynasty + '</div></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<span class="meta"><span class="status-dot" style="background:' + dot + '"></span>' +
+            (planned ? '未接入' : (b.units ? b.units + ' 条' : '待接入')) + '</span>' + btn + '</div>' +
+      '</div>';
+    }).join('');
+  });
+</script>
+<script src="assets/app.js"></script>
+</body>
+</html>

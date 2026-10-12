@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>答题 · 麻黄汤证 · HerbMind</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / <a href="train.html">练习</a> / 答题</div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <h1 class="serif" style="font-size:24px">麻黄汤证 · 案例一</h1>
+    <div class="muted">第 1 / 10 题 · <span id="timer" class="mono">03:12</span></div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 300px">
+    <section>
+      <!-- 案例原文 -->
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin-bottom:10px">案例原文</h3>
+        <p><b>现病史：</b>徐某，男，23 岁。冬日冒寒远行，当晚即感恶寒发热，头痛身痛，无汗，鼻塞流清涕。</p>
+        <p style="margin-top:8px"><b>查体：</b>体温 39.2℃，无汗，面赤，舌淡红苔薄白，脉浮紧。</p>
+      </div>
+
+      <!-- 作答区 -->
+      <div class="card">
+        <h3 style="margin-bottom:4px">请作答（先思后看）</h3>
+        <p class="muted" style="margin-bottom:16px">先写出你的辨证、治法与处方，再揭晓原著答案并评分。</p>
+
+        <div style="margin-bottom:14px">
+          <div class="muted" style="margin-bottom:6px">① 辨证（证候判断）</div>
+          <input class="input" placeholder="如：太阳伤寒表实证（风寒束表）">
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="muted" style="margin-bottom:6px">② 立法 · 治法</div>
+          <input class="input" placeholder="如：辛温解表，宣肺平喘">
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="muted" style="margin-bottom:6px">③ 处方（药味 + 剂量）</div>
+          <textarea class="input" rows="3" placeholder="如：麻黄 9g、桂枝 6g、杏仁 9g、炙甘草 3g"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px">
+          <a class="btn primary" href="report.html">提交并评分</a>
+          <button class="btn ghost" onclick="toast('已向 AI 辨证教练求助')">AI 辨证教练帮我</button>
+          <button class="btn ghost" onclick="revealAnswer()">不想答，直接看答案</button>
+        </div>
+      </div>
+    </section>
+
+    <aside style="display:grid;gap:16px;align-self:start">
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:8px">审题提示</h3>
+        <p class="muted" style="font-size:13px">抓住关键词：“无汗”“脉浮紧”“恶寒发热”——这是表实还是表虚？</p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:8px">进度</h3>
+        <div class="muted">已答 0 / 10 · 本组：太阳伤寒类方证</div>
+        <div style="height:8px;background:var(--surface-2);border-radius:8px;margin-top:10px;overflow:hidden">
+          <div style="width:6%;height:100%;background:var(--primary)"></div>
+        </div>
+      </div>
+      <div class="card reveal">
+        <h3 style="font-size:15px;margin-bottom:8px">原著答案</h3>
+        <p class="muted" style="font-size:13px">辨证：太阳伤寒表实证。治法：辛温解表，宣肺平喘。处方：麻黄 9g、桂枝 6g、杏仁 9g、炙甘草 3g。</p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script>
+  (function(){
+    var t = 192; var el = document.getElementById('timer');
+    setInterval(function(){ t++; var m=String(Math.floor(t/60)).padStart(2,'0'), s=String(t%60).padStart(2,'0'); el.textContent=m+':'+s; }, 1000);
+  })();
+</script>
+<script src="assets/app.js"></script>
+</body>
+</html>

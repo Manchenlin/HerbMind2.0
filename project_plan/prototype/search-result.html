@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>检索结果 · HerbMind</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / <a href="search.html">检索</a> / 结果</div>
+
+  <div class="card" style="margin-bottom:18px;display:flex;align-items:center;gap:12px">
+    <input class="input" value="无汗而喘、脉浮紧用什方" style="flex:1">
+    <a class="btn primary" href="search-result.html">检索</a>
+    <a class="btn ghost" href="graph.html">在图谱中展开</a>
+  </div>
+
+  <div class="grid" style="grid-template-columns:230px 1fr">
+    <!-- 分面 -->
+    <aside class="card" style="align-self:start">
+      <h3 style="margin-bottom:12px">分面统计</h3>
+      <div class="muted" style="margin-bottom:8px">类型</div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:14px">
+        <label><input type="checkbox" checked> 方剂 (3)</label>
+        <label><input type="checkbox" checked> 医案 (8)</label>
+        <label><input type="checkbox"> 条文 (5)</label>
+      </div>
+      <div class="hr"></div>
+      <div class="muted" style="margin-bottom:8px">经典</div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:14px">
+        <label><input type="checkbox" checked> 伤寒论 (14)</label>
+        <label><input type="checkbox"> 温病学 (0)</label>
+        <label><input type="checkbox"> 金匮要略 (0)</label>
+      </div>
+      <div class="hr"></div>
+      <div class="muted">命中 16 条 · 用时 0.08s</div>
+    </aside>
+
+    <!-- 结果列表 -->
+    <section class="stagger">
+      <a class="rowitem" href="formula.html" style="margin-bottom:12px">
+        <span class="thumb">麻</span>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between">
+            <b>麻黄汤 <span class="chip primary" style="margin-left:6px">方剂</span></b>
+            <span class="badge ok">相似度 0.94</span>
+          </div>
+          <div class="muted" style="margin:6px 0">发汗解表，宣肺平喘。主治外感风寒表实证：无汗而喘、脉浮紧。</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="chip">麻黄<span class="role jun">君</span></span>
+            <span class="chip">桂枝<span class="role chen">臣</span></span>
+            <span class="chip">杏仁<span class="role zuo">佐</span></span>
+            <span class="chip">炙甘草<span class="role shi">使</span></span>
+          </div>
+        </div>
+      </a>
+
+      <a class="rowitem" href="case.html" style="margin-bottom:12px">
+        <span class="thumb">案</span>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between">
+            <b>麻黄汤证 · 案例一 <span class="chip primary" style="margin-left:6px">医案</span></b>
+            <span class="badge ok">相似度 0.88</span>
+          </div>
+          <div class="muted" style="margin:6px 0">徐某，男，23 岁。冬日冒寒，恶寒发热，头痛身痛，无汗……脉浮紧。</div>
+          <span class="chip">第 19 页</span>
+        </div>
+      </a>
+
+      <a class="rowitem" href="quote.html" style="margin-bottom:12px">
+        <span class="thumb">条</span>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between">
+            <b>《伤寒论》第 35 条 <span class="chip primary" style="margin-left:6px">条文</span></b>
+            <span class="badge ok">相似度 0.85</span>
+          </div>
+          <div class="muted" style="margin:6px 0">太阳病，头痛发热，身疼腰痛，骨节疼痛，恶风，无汗而喘者，麻黄汤主之。</div>
+        </div>
+      </a>
+
+      <a class="rowitem" href="formula.html">
+        <span class="thumb">葛</span>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between">
+            <b>葛根汤 <span class="chip primary" style="margin-left:6px">方剂</span></b>
+            <span class="badge warn">相似度 0.72</span>
+          </div>
+          <div class="muted" style="margin:6px 0">发汗解表，升津舒筋。兼治太阳伤寒项背强几几。</div>
+        </div>
+      </a>
+    </section>
+  </div>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

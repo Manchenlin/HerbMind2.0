@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 700" font-family="'Noto Sans SC','Microsoft YaHei',system-ui,sans-serif">
+  <style>
+    .bg{fill:#FAFAF8}
+    .card{fill:#FFFFFF;stroke:#E6E6E0;stroke-width:1.2;rx:12}
+    .hd{fill:#2E7D6F}
+    .hd2{fill:#3B7DD8}
+    .hd3{fill:#D9724E}
+    .hd4{fill:#7A6BB5}
+    .ht{fill:#FFFFFF;font-size:15px;font-weight:700}
+    .row{fill:#1F2328;font-size:13px}
+    .row2{fill:#6B7280;font-size:12.5px}
+    .mono{font-family:'JetBrains Mono','Consolas',monospace;font-size:12.5px;fill:#1F2328}
+    .ln{stroke:#C9CFC9;stroke-width:1.4;fill:none}
+    .tag{fill:#E6F2EF;stroke:#BFE0D8}
+    .tagt{fill:#1F5C52;font-size:11.5px}
+    .title{fill:#1F2328;font-size:20px;font-weight:800}
+    .sub{fill:#6B7280;font-size:12.5px}
+  </style>
+
+  <rect class="bg" x="0" y="0" width="980" height="700"/>
+  <text class="title" x="40" y="46">HerbMind 项目结构图</text>
+  <text class="sub" x="40" y="68">工作区分区（物理） · 代码仓库七类分区（逻辑）</text>
+
+  <!-- root -->
+  <rect class="card" x="360" y="88" width="260" height="42" rx="10"/>
+  <text class="mono" x="490" y="114" text-anchor="middle" style="font-size:14px;font-weight:700">_KeYanShJian\  （新工作区根）</text>
+  <line class="ln" x1="490" y1="130" x2="490" y2="150"/>
+  <line class="ln" x1="240" y1="150" x2="740" y2="150"/>
+  <line class="ln" x1="240" y1="150" x2="240" y2="176"/>
+  <line class="ln" x1="740" y1="150" x2="740" y2="176"/>
+
+  <!-- project_plan -->
+  <rect class="card" x="40" y="176" width="400" height="176" rx="12"/>
+  <rect class="hd" x="40" y="176" width="400" height="34" rx="12"/>
+  <rect class="hd" x="40" y="196" width="400" height="14"/>
+  <text class="ht" x="58" y="199">project_plan\   计划书（本次交付 · 纯文档+原型）</text>
+  <text class="row" x="60" y="240">00_README_总览.md … 13_HTML原型说明.md</text>
+  <text class="row2" x="60" y="262">共 14 份规划文档（产品/功能/IA/视觉/架构/DB/图谱/Agent/API/ETL/学习/路线图）</text>
+  <text class="row" x="60" y="292">assets\</text>
+  <text class="row2" x="96" y="292">图表：项目结构图 / 系统架构图 / ER 图 / 图模型</text>
+  <text class="row" x="60" y="320">prototype\</text>
+  <text class="row2" x="96" y="320">高保真 HTML 原型（18 页） + assets\ (theme.css · app.js)</text>
+
+  <!-- HerbMind -->
+  <rect class="card" x="470" y="176" width="470" height="176" rx="12"/>
+  <rect class="hd2" x="470" y="176" width="470" height="34" rx="12"/>
+  <rect class="hd2" x="470" y="196" width="470" height="14"/>
+  <text class="ht" x="488" y="199">HerbMind\   新项目代码根（七类分区 · 便于查找）</text>
+  <text class="mono" x="492" y="240">docs\</text><text class="row2" x="600" y="240">设计 / 接口文档</text>
+  <text class="mono" x="492" y="264">backend\</text><text class="row2" x="600" y="264">Spring Cloud Java 微服务（IDEA 打开）</text>
+  <text class="mono" x="492" y="288">agent\</text><text class="row2" x="600" y="288">Python + LangChain 1.x Agent（PyCharm 打开）</text>
+  <text class="mono" x="492" y="312">frontend\   database\   scripts\   docker\</text>
+  <text class="row2" x="492" y="332">Vue3 前端 · DDL/ETL · 本地脚本 · 部署（开发期不用）</text>
+
+  <!-- backend detail -->
+  <rect class="card" x="470" y="382" width="470" height="286" rx="12"/>
+  <rect class="hd3" x="470" y="382" width="470" height="34" rx="12"/>
+  <rect class="hd3" x="470" y="402" width="470" height="14"/>
+  <text class="ht" x="488" y="405">backend\  微服务拆分（Spring Cloud + Nacos）</text>
+  <!-- left column -->
+  <text class="mono" x="492" y="444">herbmind-gateway</text><text class="tagt" x="700" y="444">:8080 网关</text>
+  <text class="mono" x="492" y="470">herbmind-bff</text><text class="tagt" x="700" y="470">:8090 编排</text>
+  <text class="mono" x="492" y="496">svc-identity</text><text class="tagt" x="700" y="496">:8081 用户/收藏/笔记</text>
+  <text class="mono" x="492" y="522">svc-catalog</text><text class="tagt" x="700" y="522">:8082 典籍/方案/条文</text>
+  <text class="mono" x="492" y="548">svc-search</text><text class="tagt" x="700" y="548">:8083 检索</text>
+  <text class="mono" x="492" y="574">svc-training</text><text class="tagt" x="700" y="574">:8084 练习/评分</text>
+  <text class="mono" x="492" y="600">svc-graph</text><text class="tagt" x="700" y="600">:8085 图谱(Neo4j)</text>
+  <text class="mono" x="492" y="626">svc-insight / svc-governance</text><text class="tagt" x="700" y="626">:8086 / :8087</text>
+  <text class="mono" x="492" y="652">herbmind-common / herbmind-contract</text><text class="tagt" x="700" y="652">公共 / 契约</text>
+
+  <!-- agent detail -->
+  <rect class="card" x="40" y="382" width="400" height="286" rx="12"/>
+  <rect class="hd4" x="40" y="382" width="400" height="34" rx="12"/>
+  <rect class="hd4" x="40" y="402" width="400" height="14"/>
+  <text class="ht" x="58" y="405">agent\  Python 智能中枢（LangChain 1.x）</text>
+  <text class="mono" x="60" y="446">app\main.py</text><text class="row2" x="210" y="446">FastAPI 入口  :8091</text>
+  <text class="mono" x="60" y="472">app\agents\</text><text class="row2" x="210" y="472">问答 / 辨证教练 / Supervisor</text>
+  <text class="mono" x="60" y="498">app\tools\</text><text class="row2" x="210" y="498">11 个 @tool（查方/图谱/统计/换算/评分…）</text>
+  <text class="mono" x="60" y="524">app\rag\</text><text class="row2" x="210" y="524">混合召回 + 重排 + 上下文拼装</text>
+  <text class="mono" x="60" y="550">app\memory\</text><text class="row2" x="210" y="550">会话 checkpointer + 长期画像</text>
+  <text class="mono" x="60" y="576">app\clients\</text><text class="row2" x="210" y="576">调用后端各 svc（/internal）</text>
+  <text class="mono" x="60" y="602">requirements.txt</text><text class="row2" x="210" y="602">conda env: herbmind (Py3.11)</text>
+  <text class="mono" x="60" y="628">.env.example</text><text class="row2" x="210" y="628">云 LLM/Embedding 配置</text>
+  <text class="row2" x="60" y="654">开发期：PyCharm 本地起，不打容器；中间件走 Docker</text>
+</svg>

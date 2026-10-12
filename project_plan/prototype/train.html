@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>练习台 · HerbMind</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / 练习</div>
+  <h1 class="serif" style="margin-bottom:6px">练习台 · 先思后看</h1>
+  <p class="muted" style="margin-bottom:22px">看案例先辨证处方，提交后由 AI 逐条评分，并与原著对照。</p>
+
+  <div class="grid cols-3" style="margin-bottom:26px">
+    <a class="card link" href="answer.html"><div style="font-size:26px">📖</div><h3 style="margin:8px 0 4px">按方证单元练习</h3><p class="muted">选择章节 / 类 / 单元，系统出题。</p></a>
+    <a class="card link" href="blindbox.html"><div style="font-size:26px">🎲</div><h3 style="margin:8px 0 4px">案例盲盒</h3><p class="muted">随机抽一个医案，先答再看，趣味化。</p></a>
+    <a class="card link" href="report.html"><div style="font-size:26px">📝</div><h3 style="margin:8px 0 4px">背诵打卡</h3><p class="muted">条文默写 + 间隔重复（SRS）。</p></a>
+  </div>
+
+  <div class="grid cols-2">
+    <section class="card">
+      <h3 style="margin-bottom:12px">选择练习内容</h3>
+      <div style="margin-bottom:12px">
+        <div class="muted" style="margin-bottom:6px">经典 / 章节</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="chip clickable sel">伤寒论 · 太阳病</span>
+          <span class="chip clickable">伤寒论 · 阳明病</span>
+          <span class="chip clickable">温病学 · 风温</span>
+          <span class="chip clickable">金匮要略</span>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div class="muted" style="margin-bottom:6px">方证类</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="chip clickable sel">太阳伤寒类方证</span>
+          <span class="chip clickable">太阳中风类方证</span>
+        </div>
+      </div>
+      <div style="margin-bottom:6px">
+        <div class="muted" style="margin-bottom:6px">模式</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="chip clickable sel">先思后看</span>
+          <span class="chip clickable">仅辨证</span>
+          <span class="chip clickable">仅方剂</span>
+        </div>
+      </div>
+      <a class="btn primary" style="margin-top:16px" href="answer.html">开始练习（10 题）</a>
+    </section>
+
+    <section class="card">
+      <h3 style="margin-bottom:12px">最近练习</h3>
+      <div class="stagger" style="display:grid;gap:10px">
+        <a class="rowitem" href="report.html"><span class="thumb">82</span><div style="flex:1"><b>麻黄汤证 · 案例一</b><div class="muted">昨 20:14 · 得分 82 · 用时 3′12″</div></div></a>
+        <a class="rowitem" href="report.html"><span class="thumb">76</span><div style="flex:1"><b>桂枝汤证 · 案例一</b><div class="muted">昨 19:50 · 得分 76 · 用时 4′05″</div></div></a>
+        <a class="rowitem" href="report.html"><span class="thumb">61</span><div style="flex:1"><b>葛根汤证 · 案例二</b><div class="muted">前日 · 得分 61 · 已加入错题本</div></div></a>
+      </div>
+      <a class="btn ghost sm" style="margin-top:12px" href="me.html">查看学习档案 →</a>
+    </section>
+  </div>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.chip.clickable').forEach(function(c){
+      c.addEventListener('click', function(){
+        var group = c.parentElement;
+        group.querySelectorAll('.chip').forEach(function(x){ x.classList.remove('sel'); });
+        c.classList.add('sel');
+      });
+    });
+  });
+</script>
+<script src="assets/app.js"></script>
+</body>
+</html>

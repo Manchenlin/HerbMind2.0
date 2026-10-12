@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 330" font-family="'Noto Sans SC','Microsoft YaHei',system-ui,sans-serif">
+  <style>
+    .bg{fill:#FAFAF8}
+    .title{fill:#1F2328;font-size:19px;font-weight:800}
+    .sub{fill:#6B7280;font-size:12.5px}
+    .t{font-size:14px;font-weight:700}
+    .ts{font-size:12px}
+    .note{fill:#5F5E5A;font-size:12px}
+  </style>
+  <rect class="bg" x="0" y="0" width="720" height="330"/>
+  <text class="title" x="30" y="42">扩展策略 · 先深后广</text>
+  <text class="sub" x="30" y="63">宽度可以加，深度不能稀释；优先级 L0 → L1 → L2 → L3</text>
+
+  <rect x="30" y="88" width="150" height="118" rx="10" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1.6"/>
+  <text class="t" x="105" y="116" fill="#085041" text-anchor="middle">L0 · 方证深度</text>
+  <text class="ts" x="105" y="142" fill="#0F6E56" text-anchor="middle">护城河 · 做深做透</text>
+  <text class="ts" x="105" y="162" fill="#0F6E56" text-anchor="middle">练习 + 评分 + Agent</text>
+  <text class="ts" x="105" y="182" fill="#0F6E56" text-anchor="middle">（当前这本书）</text>
+
+  <rect x="192" y="88" width="150" height="118" rx="10" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.6"/>
+  <text class="t" x="267" y="116" fill="#0C447C" text-anchor="middle">L1 · 平台化</text>
+  <text class="ts" x="267" y="142" fill="#185FA5" text-anchor="middle">语料抽象层</text>
+  <text class="ts" x="267" y="162" fill="#185FA5" text-anchor="middle">多本书可插拔</text>
+  <text class="ts" x="267" y="182" fill="#185FA5" text-anchor="middle">成本低 · 收益大</text>
+
+  <rect x="354" y="88" width="150" height="118" rx="10" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.6"/>
+  <text class="t" x="429" y="116" fill="#3C3489" text-anchor="middle">L2 · 横向内容</text>
+  <text class="ts" x="429" y="142" fill="#534AB7" text-anchor="middle">多经典 · 教材</text>
+  <text class="ts" x="429" y="162" fill="#534AB7" text-anchor="middle">题库接入</text>
+  <text class="ts" x="429" y="182" fill="#534AB7" text-anchor="middle">内容不再封顶</text>
+
+  <rect x="516" y="88" width="174" height="118" rx="10" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.6"/>
+  <text class="t" x="603" y="116" fill="#633806" text-anchor="middle">L3 · 工具与场景</text>
+  <text class="ts" x="603" y="142" fill="#854F0B" text-anchor="middle">药材库 · 剂量换算</text>
+  <text class="ts" x="603" y="162" fill="#854F0B" text-anchor="middle">考试 / 临床</text>
+  <text class="ts" x="603" y="182" fill="#854F0B" text-anchor="middle">从“学”到“用”</text>
+
+  <line x1="50" y1="228" x2="660" y2="228" stroke="#5F5E5A" stroke-width="1.6" marker-end="url(#a)"/>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+  <text class="note" x="30" y="250">深（垂直深耕）</text>
+  <text class="note" x="690" y="250" text-anchor="end">广（横向扩展）</text>
+
+  <rect x="30" y="266" width="660" height="50" rx="10" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.6"/>
+  <text x="360" y="284" font-size="13.5" font-weight="700" fill="#2C2C2A" text-anchor="middle">优先级：L0 现在做透 → L1 架构层面立刻预留 → L2 / L3 分期接入</text>
+  <text x="360" y="303" class="note" text-anchor="middle">原则：拓展只增加宽度，绝不摊薄 L0 的方证深度</text>
+</svg>

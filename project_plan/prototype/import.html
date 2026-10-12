@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导入语料 · HerbMind</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / <a href="shelf.html">书架</a> / 导入语料</div>
+  <h1 class="serif" style="margin-bottom:6px">导入语料</h1>
+  <p class="muted" style="margin-bottom:18px">把你自己的书籍 / 资料接入平台（UGC）。提交后进入治理审核，通过即可检索、问答、练习、建图。</p>
+
+  <div class="steps">
+    <div class="st on"><span class="no">1</span>上传文件</div>
+    <div class="st on"><span class="no">2</span>填写信息</div>
+    <div class="st"><span class="no">3</span>解析预览</div>
+    <div class="st"><span class="no">4</span>提交审核</div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 320px">
+    <form class="card" onsubmit="submitImport();return false;">
+      <!-- 上传 -->
+      <div class="dropzone" onclick="toast('已选择文件：伤寒论注.docx')">
+        <div class="ic">⬆</div>
+        <div style="margin-top:6px"><b>拖拽文件到此处，或点击上传</b></div>
+        <div class="hint">支持 .docx / .txt / .md / .csv，单文件 ≤ 50MB</div>
+      </div>
+
+      <div class="hr"></div>
+
+      <!-- 元信息 -->
+      <h3 style="margin-bottom:12px">语料信息</h3>
+      <div class="grid cols-2" style="gap:14px">
+        <div class="field"><label>书名 *</label><input class="input" placeholder="如：伤寒论注"></div>
+        <div class="field">
+          <label>类型 *</label>
+          <select class="input">
+            <option>方证书（方剂 / 条文 / 医案）</option>
+            <option>本草书（药材专论）</option>
+            <option>药品书（中成药 / 药理）</option>
+            <option>医案书（病例集）</option>
+          </select>
+        </div>
+        <div class="field"><label>作者</label><input class="input" placeholder="如：柯琴"></div>
+        <div class="field"><label>朝代</label><input class="input" placeholder="如：清"></div>
+      </div>
+
+      <div class="field">
+        <label>来源 / 版权声明 *</label>
+        <textarea class="input" rows="2" placeholder="如：公版古籍（作者已故逾百年）；或注明授权来源"></textarea>
+      </div>
+
+      <div class="hr"></div>
+
+      <!-- 解析选项 -->
+      <h3 style="margin-bottom:12px">解析选项</h3>
+      <div class="grid cols-2" style="gap:14px">
+        <div class="field">
+          <label>栏目规则模板</label>
+          <select class="input">
+            <option>自动识别（推荐）</option>
+            <option>方证书模板（提要/原文/案例/证治归纳…）</option>
+            <option>本草书模板（性味/归经/功效/主治…）</option>
+            <option>新建模板…</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>可见性</label>
+          <select class="input">
+            <option>仅自己可见</option>
+            <option>提交公共书架（需审核）</option>
+          </select>
+        </div>
+      </div>
+      <label class="muted" style="display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:8px">
+        <input type="checkbox" checked> 生成向量（用于语义检索 / RAG 问答）
+      </label>
+      <label class="muted" style="display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:16px">
+        <input type="checkbox" checked> 抽取药味与剂量
+      </label>
+
+      <div style="display:flex;gap:10px">
+        <button class="btn primary" type="submit">提交导入</button>
+        <a class="btn ghost" href="shelf.html">取消</a>
+      </div>
+    </form>
+
+    <!-- 须知 -->
+    <aside style="display:grid;gap:16px;align-self:start">
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:10px">导入须知</h3>
+        <div class="timeline" style="margin-top:4px">
+          <div class="ev">① 上传并填写信息</div>
+          <div class="ev">② 系统自动解析章节 / 栏目</div>
+          <div class="ev">③ 进入<b>治理审核</b>（质量校验）</div>
+          <div class="ev">④ 通过后加入书架，可检索 / 练习</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:8px">版权提示</h3>
+        <p class="muted" style="font-size:13px">古籍原文（作者已故久远）属公版可自由导入；现代教材、题库等受著作权保护，请确保拥有授权，或仅作个人学习使用（不公开）。</p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:8px">插拔式</h3>
+        <p class="muted" style="font-size:13px">导入 = 注册语料 + 通用解析，无需改系统。详见 <a href="../14_插拔式书籍扩展方案.md" style="color:var(--primary)">14 号文档</a>。</p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script>
+  function submitImport(){
+    document.querySelectorAll('.steps .st').forEach(function(s){ s.classList.add('on'); });
+    toast('已提交，进入治理审核（原型示意）');
+  }
+</script>
+<script src="assets/app.js"></script>
+</body>
+</html>

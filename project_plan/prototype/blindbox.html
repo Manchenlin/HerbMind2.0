@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>案例盲盒 · HerbMind</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / <a href="train.html">练习</a> / 案例盲盒</div>
+  <h1 class="serif" style="margin-bottom:6px">案例盲盒 🎲</h1>
+  <p class="muted" style="margin-bottom:22px">随机抽取一个医案，先辨证处方，再揭晓答案。像开盲盒一样学方证。</p>
+
+  <div class="grid" style="grid-template-columns:1fr 300px">
+    <section class="card" style="min-height:320px">
+      <div id="empty" class="center" style="padding:60px 0">
+        <div style="font-size:56px">🎁</div>
+        <p class="muted" style="margin:16px 0 20px">点击下方按钮，随机抽取一个医案</p>
+        <button class="btn primary" onclick="draw()">抽取盲盒</button>
+      </div>
+
+      <div id="box" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3 id="btitle"></h3>
+          <span class="chip gold">盲盒</span>
+        </div>
+        <p id="billness" style="margin:12px 0"></p>
+        <p id="bexam" class="muted"></p>
+        <div class="hr"></div>
+        <div class="reveal" id="banswer">
+          <p><b>辨证：</b><span id="bdiag"></span></p>
+          <p style="margin-top:8px"><b>治法：</b><span id="btrt"></span></p>
+          <p style="margin-top:8px"><b>处方：</b><span id="bpre"></span></p>
+        </div>
+        <div class="mask" id="bmask"></div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="btn accent" id="revealBtn" onclick="revealAnswer()">揭晓答案</button>
+          <button class="btn ghost" onclick="draw()">换一个</button>
+          <a class="btn ghost" href="report.html">去评分</a>
+        </div>
+      </div>
+    </section>
+
+    <aside style="display:grid;gap:16px;align-self:start">
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:8px">玩法说明</h3>
+        <ol class="muted" style="font-size:13px;padding-left:18px;line-height:2">
+          <li>随机抽一个医案</li>
+          <li>先自己辨证、立法、处方</li>
+          <li>揭晓原著答案对照</li>
+          <li>低分自动进错题本</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:8px">本次战绩</h3>
+        <div class="muted">已抽 3 个 · 平均 79 分</div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script>
+  function draw(){
+    var c = MOCK.cases[Math.floor(Math.random()*MOCK.cases.length)];
+    document.getElementById('empty').style.display='none';
+    document.getElementById('box').style.display='';
+    document.getElementById('btitle').textContent = c.title;
+    document.getElementById('billness').innerHTML = '<b>现病史：</b>'+c.illness;
+    document.getElementById('bexam').innerHTML = '<b>查体：</b>'+c.exam;
+    document.getElementById('bdiag').textContent = c.diagnosis;
+    document.getElementById('btrt').textContent = c.treatment;
+    document.getElementById('bpre').textContent = c.prescription;
+    document.querySelectorAll('#banswer, #bmask').forEach(function(x){x.classList.remove('show');});
+    document.getElementById('banswer').classList.remove('show');
+    var m = document.getElementById('bmask'); m.style.display='';
+    var btn = document.getElementById('revealBtn'); btn.textContent='揭晓答案'; btn.disabled=false;
+    toast('抽到：'+c.title);
+  }
+</script>
+<script src="assets/app.js"></script>
+</body>
+</html>

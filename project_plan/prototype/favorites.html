@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>收藏与笔记 · HerbMind</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / <a href="me.html">我的</a> / 收藏与笔记</div>
+  <h1 class="serif" style="margin-bottom:14px">收藏 · 笔记 · 讨论</h1>
+
+  <div class="pill-tabs" style="margin-bottom:18px">
+    <button class="active" data-tab="fav">我的收藏</button>
+    <button data-tab="note">我的笔记</button>
+    <button data-tab="disc">我的讨论</button>
+  </div>
+
+  <!-- 收藏 -->
+  <section data-panel="fav">
+    <div class="grid cols-2 stagger">
+      <a class="rowitem" href="formula.html"><span class="thumb">桂</span><div style="flex:1"><b>桂枝汤</b> <span class="chip" style="font-size:11px">方剂</span><div class="muted">解肌发表，调和营卫 · 第 12 页</div></div></a>
+      <a class="rowitem" href="formula.html"><span class="thumb">麻</span><div style="flex:1"><b>麻黄汤</b> <span class="chip" style="font-size:11px">方剂</span><div class="muted">发汗解表，宣肺平喘 · 第 19 页</div></div></a>
+      <a class="rowitem" href="quote.html"><span class="thumb">条</span><div style="flex:1"><b>伤寒论 第 35 条</b> <span class="chip" style="font-size:11px">条文</span><div class="muted">……无汗而喘者，麻黄汤主之</div></div></a>
+      <a class="rowitem" href="case.html"><span class="thumb">案</span><div style="flex:1"><b>麻黄汤证 · 案例一</b> <span class="chip" style="font-size:11px">医案</span><div class="muted">第 19 页</div></div></a>
+    </div>
+  </section>
+
+  <!-- 笔记 -->
+  <section data-panel="note" style="display:none">
+    <div class="grid cols-2 stagger">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between"><b>麻黄汤 vs 桂枝汤鉴别</b><span class="muted">10-09</span></div>
+        <p class="muted" style="margin:8px 0">关键在“有汗/无汗、脉缓/脉紧”。<span class="chip primary" style="font-size:11px">@麻黄汤</span> <span class="chip primary" style="font-size:11px">@桂枝汤</span></p>
+        <div class="muted" style="font-size:12.5px">↳ 关联 2 个方证（双向链接）</div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between"><b>太阳病提纲</b><span class="muted">10-07</span></div>
+        <p class="muted" style="margin:8px 0">“脉浮，头项强痛而恶寒”为太阳病提纲。</p>
+        <div class="muted" style="font-size:12.5px">↳ 锚定 条文 · 第 1 条</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 讨论 -->
+  <section data-panel="disc" style="display:none">
+    <div class="card" style="margin-bottom:12px">
+      <b>麻黄汤证为何不用桂枝汤？</b>
+      <p class="muted" style="margin:6px 0">2 楼 · 学员A：患者无汗、脉浮紧……</p>
+      <p class="muted">3 楼 · 带教：答得好，“无汗而喘”是表实关键。</p>
+      <div style="margin-top:8px"><span class="badge ok">已被加精</span></div>
+    </div>
+    <div class="card">
+      <b>白虎汤“四大症”如何记忆？</b>
+      <p class="muted" style="margin:6px 0">1 楼 · 学员B：大热、大汗、大渴、脉洪大。</p>
+    </div>
+  </section>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

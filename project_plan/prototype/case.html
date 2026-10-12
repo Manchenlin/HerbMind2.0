@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>麻黄汤证 · 案例一 · HerbMind</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar"></header>
+
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / <a href="library.html">典籍</a> / 伤寒论 / 太阳病 / <a href="formula.html">麻黄汤证</a> / 案例一</div>
+
+  <h1 class="serif" style="margin-bottom:6px">麻黄汤证 · 案例一（主治标准）</h1>
+  <div class="muted" style="margin-bottom:16px">主方 <a href="formula.html" style="color:var(--primary)">麻黄汤</a> · 第 19 页 · 太阳伤寒表实证</div>
+
+  <div class="pill-tabs" style="margin-bottom:18px">
+    <button class="active" data-tab="c1">案例一（主治标准）</button>
+    <button data-tab="c2">案例二（兼治）</button>
+    <button data-tab="c3">案例三（变治）</button>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 300px">
+    <section class="card">
+      <div data-panel="c1">
+        <h3 style="margin-bottom:10px">现病史 · 病情</h3>
+        <p>徐某，男，23 岁。冬日冒寒远行，当晚即感恶寒发热，头痛身痛，无汗，鼻塞流清涕。</p>
+        <h3 style="margin:18px 0 10px">查体</h3>
+        <p>体温 39.2℃，无汗，面赤，舌淡红苔薄白，脉浮紧。</p>
+      </div>
+      <div data-panel="c2" style="display:none"><p class="muted">（原型示例）患者兼见项背强几几，考虑太阳伤寒兼经气不利，方用葛根汤加减……</p></div>
+      <div data-panel="c3" style="display:none"><p class="muted">（原型示例）表实兼里热烦躁，为大青龙汤证……</p></div>
+
+      <div class="hr"></div>
+      <div class="reveal" id="answer">
+        <h3 style="margin-bottom:10px">辨证</h3>
+        <p>太阳伤寒表实证（风寒束表，肺气失宣）。</p>
+        <h3 style="margin:16px 0 10px">立法 · 治法</h3>
+        <p>辛温解表，宣肺平喘。</p>
+        <h3 style="margin:16px 0 10px">处方</h3>
+        <p>麻黄 9g、桂枝 6g、杏仁 9g、炙甘草 3g。水煎温服，取微汗。</p>
+        <h3 style="margin:16px 0 10px">治疗效果</h3>
+        <p>一剂后汗出热退，诸症顿减，二剂而愈。</p>
+      </div>
+      <div class="mask"></div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button class="btn accent" id="revealBtn" onclick="revealAnswer()">揭晓原著答案</button>
+        <a class="btn ghost" href="answer.html">先思后看 · 我来辨证</a>
+      </div>
+    </section>
+
+    <aside style="display:grid;gap:16px;align-self:start">
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:8px">按语 · 讨论</h3>
+        <div class="cite"><div><b>【提要】</b>本案为典型太阳伤寒表实证，辨证要点在“无汗、脉浮紧”。</div></div>
+        <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">【问题】</summary>
+          <p class="muted" style="margin-top:6px">麻黄汤与桂枝汤如何鉴别？（提示：有汗 / 无汗，脉缓 / 脉紧）</p></details>
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:8px">讨论区</h3>
+        <div class="muted" style="font-size:13px">2 楼 · 学员A：此处为何不用桂枝汤？</div>
+        <div class="muted" style="font-size:13px;margin-top:6px">3 楼 · 带教：关键在“无汗而喘”……</div>
+        <a class="btn ghost sm" style="margin-top:12px" href="favorites.html">参与讨论 →</a>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer></footer>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
