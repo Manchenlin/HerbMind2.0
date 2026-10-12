@@ -55,7 +55,7 @@ def main():
 
     # 3) BFF（经网关或直连 BFF）
     try:
-        r = requests.get(f"{BFF}/api/biz/library/tree", params={"bookId": "fz"}, timeout=5)
+        r = requests.get(f"{BFF}/api/biz/library/tree", params={"bookId": "bk_1"}, timeout=5)
         body = r.json()
         check("BFF: code=0", body.get("code") == 0, f"body={json.dumps(body, ensure_ascii=False)[:100]}")
         check("BFF: data is list", isinstance(body.get("data"), list))
