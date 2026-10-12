@@ -9,6 +9,6 @@ export interface BookTreeNode {
 }
 
 /** 典籍目录树（域1：/api/biz/library/tree） */
-export function getLibraryTree(bookId = 'fz') {
+export function getLibraryTree(bookId = 'bk_1') {
   return request.get<unknown, BookTreeNode[]>('/biz/library/tree', { params: { bookId } })
 }

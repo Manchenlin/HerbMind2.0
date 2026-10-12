@@ -86,12 +86,12 @@ import { getLibraryTree, type BookTreeNode } from '@/api/catalog'
 import { toast } from '@/utils/toast'
 
 const bookTabs = [
-  { id: 'fz', label: '中医经典方证案例研究', disabled: false },
-  { id: 'sh', label: '伤寒论原文', disabled: false },
-  { id: 'jg', label: '金匮要略（规划中）', disabled: true }
+  { id: 'bk_1', label: '伤寒论', disabled: false },
+  { id: 'bk_2', label: '温病学', disabled: false },
+  { id: 'bk_3', label: '金匮要略', disabled: false }
 ]
 
-const bookId = ref('fz')
+const bookId = ref('bk_1')
 const tree = ref<BookTreeNode[]>([])
 const selected = ref<BookTreeNode | null>(null)
 const loading = ref(false)

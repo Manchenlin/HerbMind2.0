@@ -26,7 +26,7 @@ public class InternalCatalogController {
     }
 
     @GetMapping("/tree")
-    public List<BookTreeNode> tree(@RequestParam(value = "bookId", required = false, defaultValue = "fz") String bookId) {
+    public List<BookTreeNode> tree(@RequestParam(value = "bookId", required = false, defaultValue = "bk_1") String bookId) {
         return service.tree(bookId);
     }
 

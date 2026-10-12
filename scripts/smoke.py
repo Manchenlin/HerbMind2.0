@@ -1,6 +1,6 @@
-"""端到端冒烟：PG 计数 + BFF 接口 + Neo4j 计数。
+"""端到端冒烟：PG 计数 + 向量 + BFF 接口 + Neo4j 计数。
 
-前置：中间件已起、种子已导入、svc-catalog / bff / gateway 已启动。
+前置：中间件已起、数据已导入（migrate_legacy.py）、svc-catalog / bff / gateway 已启动。
 运行：python smoke.py     （任一失败即非零退出）
 """
 import json
@@ -10,10 +10,19 @@ import sys
 import requests
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "database", "etl"))
-from db import query, neo4j_driver  # noqa: E402
+from db import neo4j_driver, query  # noqa: E402
 
 BFF = os.getenv("BFF_BASE", "http://localhost:8090")
 FAIL = False
+
+# 正式数据基线（来自 migrate_legacy）
+EXPECT = {
+    "formula": 245,
+    "case_record": 290,
+    "classic_quote": 568,
+    "content_unit": 535,
+    "formula_herb": 1006,
+}
 
 
 def check(label, cond, detail=""):
@@ -24,31 +33,44 @@ def check(label, cond, detail=""):
 
 
 def main():
-    # 1) PG
+    # 1) PG 行数
     try:
-        formula = query("SELECT count(*) FROM formula")[0][0]
-        quotes = query("SELECT count(*) FROM classic_quote")[0][0]
-        check("PG: formula=3", formula == 3, f"got {formula}")
-        check("PG: classic_quote=5", quotes == 5, f"got {quotes}")
+        for table, want in EXPECT.items():
+            got = query(f"SELECT count(*) FROM {table}")[0][0]
+            check(f"PG: {table}={want}", got == want, f"got {got}")
     except Exception as e:  # noqa: BLE001
         check("PG reachable", False, str(e))
 
-    # 2) BFF（经网关或直连 BFF）
+    # 2) 向量（全部非空、1024 维）
     try:
-        r = requests.get(f"{BFF}/api/biz/library/tree", params={"bookId": "sh"}, timeout=5)
+        with_vec, dims = query(
+            "SELECT count(*) FILTER (WHERE embedding IS NOT NULL), "
+            "(SELECT vector_dims(embedding) FROM content_unit WHERE embedding IS NOT NULL LIMIT 1) "
+            "FROM content_unit"
+        )[0]
+        check("PG: 向量 535 条", with_vec == 535, f"got {with_vec}")
+        check("PG: 向量 1024 维", dims == 1024, f"got {dims}")
+    except Exception as e:  # noqa: BLE001
+        check("PG 向量可查", False, str(e))
+
+    # 3) BFF（经网关或直连 BFF）
+    try:
+        r = requests.get(f"{BFF}/api/biz/library/tree", params={"bookId": "fz"}, timeout=5)
         body = r.json()
-        check("BFF: code=0", body.get("code") == 0, f"body={json.dumps(body, ensure_ascii=False)[:120]}")
+        check("BFF: code=0", body.get("code") == 0, f"body={json.dumps(body, ensure_ascii=False)[:100]}")
         check("BFF: data is list", isinstance(body.get("data"), list))
     except Exception as e:  # noqa: BLE001
         check("BFF reachable", False, str(e))
 
-    # 3) Neo4j
+    # 4) Neo4j（方剂按 id 建，应为 245）
     try:
         d = neo4j_driver()
         with d.session() as s:
             c = s.run("MATCH (f:Formula) RETURN count(f) AS c").single()["c"]
+            rel = s.run("MATCH ()-[r:COMPOSED_OF]->() RETURN count(r) AS c").single()["c"]
         d.close()
-        check("Neo4j: Formula=3", c == 3, f"got {c}")
+        check("Neo4j: Formula=245", c == 245, f"got {c}")
+        check("Neo4j: COMPOSED_OF>900", rel > 900, f"got {rel}")
     except Exception as e:  # noqa: BLE001
         check("Neo4j reachable", False, str(e))
 

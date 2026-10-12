@@ -43,11 +43,11 @@ const NAV = [
 ]
 
 const books = [
-  { id: 'fz', title: '中医经典方证案例研究', current: true, planned: false },
-  { id: 'sh', title: '伤寒论原文', current: false, planned: false },
-  { id: 'jg', title: '金匮要略', current: false, planned: true }
+  { id: 'bk_1', title: '伤寒论', current: true, planned: false },
+  { id: 'bk_2', title: '温病学', current: false, planned: false },
+  { id: 'bk_3', title: '金匮要略', current: false, planned: false }
 ]
-const bookId = ref('fz')
+const bookId = ref('bk_1')
 
 const route = useRoute()
 function isActive(to: string) {
@@ -59,7 +59,7 @@ function onSwitch() {
   if (!b) return
   if (b.planned) {
     toast(`「${b.title}」规划中，敬请期待`)
-    bookId.value = 'fz'
+    bookId.value = 'bk_1'
     return
   }
   toast(`已切换语料：${b.title}`)

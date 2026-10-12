@@ -27,7 +27,7 @@ public class LibraryController {
 
     @GetMapping("/library/tree")
     public R<List<BookTreeNode>> tree(
-            @RequestParam(value = "bookId", required = false, defaultValue = "fz") String bookId) {
+            @RequestParam(value = "bookId", required = false, defaultValue = "bk_1") String bookId) {
         return R.ok(catalog.tree(bookId));
     }
 }
