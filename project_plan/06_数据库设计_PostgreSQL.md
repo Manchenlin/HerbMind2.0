@@ -8,6 +8,8 @@
 > 建库脚本 `HerbMind/database/pg/`：`00-extensions` → `01-schema`（语料骨架 + 内容域 + 最小三域）→ `02-relation`（通用关系兜底）→ `03-domains`（用户/练习/图谱规则/Agent/治理 + 专属关系表）→ `04-indexes`（HNSW 向量 + GIN 全文/trgm）。
 > 实测：全新库顺序执行 **41 张表 / 73 个索引（含 1 个 HNSW）**，`errors=0`；真实数据 **245 方 / 290 案 / 568 条文 / 535 向量（1024 维）** 已入库。
 > 与设计的差异：§2 A 域的 `case_quote_rel`/`formula_quote_rel` **保留为专属表**，另建通用 `relation` 兜底（§7 策略）；`study_path`/`study_path_item`、`symptom`/`sign` 等按 §2 逐字落地。
+>
+> **数据快照格式**：`herbmind_data.sql`（纯文本，约 8.5MB）或 `herbmind_data.sql.gz`（gzip，约 3MB），由 `pg_dump --no-owner --no-privileges --clean --if-exists` 导出。导入用 `bash scripts/init-data.sh <文件>`，**脚本自动识别两种格式**；库里已有数据时加 `--reset` 清空重建。快照**不进 Git**（`.gitignore` 已挡），由团队私下分发。
 
 ## 1. 设计原则
 

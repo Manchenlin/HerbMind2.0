@@ -17,6 +17,8 @@ docker/volumes/
 .env
 
 # ★ 数据快照：体积大，一律不进仓库（由团队私下分发，见 docs/新人上手指南.md）
+herbmind_data.sql
+herbmind_data.sql.gz
 *.sql.gz
 *.dump
 database/seed/
