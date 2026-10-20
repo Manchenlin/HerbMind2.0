@@ -21,8 +21,9 @@ cd HerbMind2.0
 docker compose -f docker/docker-compose.infra.yml up -d
 
 # 2) 导入数据
-#  ★ 组员（推荐）：用组长分发的数据快照（2~3MB，不进仓库、不烧云额度）
-bash scripts/init-data.sh /c/Users/你/Desktop/herbmind_data.sql.gz
+#  ★ 组员（推荐）：用组长分发的数据快照（.sql 或 .sql.gz 均可，脚本自动识别；不进仓库、不烧云额度）
+bash scripts/init-data.sh /c/Users/你/Desktop/herbmind_data.sql
+#    库里已有数据要重来时加 --reset：bash scripts/init-data.sh <快照> --reset
 
 #  ★ 仅"数据的产出者"（拥有旧库的人）才跑迁移：
 #    cd database/etl && pip install -r requirements.txt && python migrate_legacy.py && python build_graph.py
