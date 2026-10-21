@@ -30,3 +30,6 @@ database/seed/
 # OS
 .DS_Store
 Thumbs.db
+
+# ★ 智能体全局记忆：只存本机，不进仓库（含协作口径与实核结论）
+PROJECT_MEMORY.md
