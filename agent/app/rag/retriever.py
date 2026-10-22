@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 from dataclasses import dataclass
 
 from app.config import get_settings
@@ -23,6 +24,10 @@ logger = logging.getLogger("herbmind-agent")
 
 # 引用卡片预览用的正文长度
 SNIPPET_LEN = 160
+
+# 不指定 ref_type 时，方剂占的配额比例（其余给医案）
+# 0.6 → top_k=5 时方剂 3 条 + 医案 2 条
+FORMULA_RATIO = 0.6
 
 
 @dataclass(slots=True)
@@ -98,7 +103,7 @@ async def retrieve(
     Args:
         question: 用户问题（中文原文，不需要预处理）
         top_k: 召回条数，默认取配置
-        ref_type: 限定 'formula' / 'case'，None 表示不限
+        ref_type: 限定 'formula' / 'case'；None 表示按配额双路召回（方剂 60% + 医案 40%）
         min_score: 相似度下限，低于此丢弃（宁可少给，也不要塞不相关内容诱发幻觉）
 
     Returns:
@@ -108,45 +113,58 @@ async def retrieve(
     limit = top_k or s.retrieval_top_k
     threshold = s.retrieval_min_score if min_score is None else min_score
 
-    # ① 问题向量化（走硅基流动 bge-m3，约 100~300ms）
-    vector = await embed_query(question)
-    vec_literal = _to_pgvector(vector)
+    # ① 问题向量化（走硅基流动 bge-m3，约 100~300ms）——两类检索共用同一个向量，只调一次
+    vec_literal = _to_pgvector(await embed_query(question))
 
-    # ② pgvector 检索（HNSW 索引，约 2~10ms）
-    ref_filter = "AND ref_type = %(ref_type)s" if ref_type else ""
-    sql = _SQL_TEMPLATE.format(ref_filter=ref_filter)
-    params: dict = {"vec": vec_literal, "limit": limit}
-    if ref_type:
-        params["ref_type"] = ref_type
-
-    def _query() -> list[tuple]:
-        # psycopg 是阻塞调用，丢线程池，避免卡住事件循环
+    def _query(ref_type_filter: str, k: int) -> list[tuple]:
+        """单路检索（走 HNSW 索引）。阻塞调用，调用方负责丢线程池。"""
+        sql = _SQL_TEMPLATE.format(ref_filter="AND ref_type = %(ref_type)s")
+        params = {"vec": vec_literal, "limit": k, "ref_type": ref_type_filter}
         with get_pg_pool().connection(timeout=5) as conn:
             with conn.cursor() as cur:
                 cur.execute(sql, params)
                 return cur.fetchall()
 
-    rows = await asyncio.to_thread(_query)
-    units = [
-        RetrievedUnit(
-            id=row[0],
-            ref_type=row[1],
-            ref_id=row[2],
-            title=_display_title(row[1], row[3], row[4], row[2]),
-            content=row[4],
-            score=float(row[5]),
+    def _to_units(rows: list[tuple]) -> list[RetrievedUnit]:
+        return [
+            RetrievedUnit(
+                id=row[0],
+                ref_type=row[1],
+                ref_id=row[2],
+                title=_display_title(row[1], row[3], row[4], row[2]),
+                content=row[4],
+                score=float(row[5]),
+            )
+            for row in rows
+        ]
+
+    # ② 检索：指定类型就单路；不指定就按"类型配额"双路召回
+    if ref_type:
+        rows = await asyncio.to_thread(_query, ref_type, limit)
+        units = _to_units(rows)
+    else:
+        # 为什么要配额：实测问"无汗而喘脉浮紧用什么方"时，Top5 全被医案占满，
+        # 真正的"麻黄汤"方剂排在 6 名开外 → 问方不给方，用户体验很差。
+        # 改成方剂 60% + 医案 40% 的配额，保证"问方必有方、问案必有案"。
+        formula_k = max(1, math.ceil(limit * FORMULA_RATIO))
+        case_k = max(1, limit - formula_k)
+        rows_f, rows_c = await asyncio.gather(
+            asyncio.to_thread(_query, "formula", formula_k),
+            asyncio.to_thread(_query, "case", case_k),
         )
-        for row in rows
-    ]
+        units = _to_units(rows_f) + _to_units(rows_c)
+        units.sort(key=lambda u: u.score, reverse=True)
 
     kept = [u for u in units if u.score >= threshold]
     logger.info(
-        "检索『%s』limit=%s 阈值=%.2f → 保留 %d/%d 条（最高分 %.3f）",
+        "检索『%s』配额=%s 阈值=%.2f → 保留 %d/%d 条（方剂 %d、医案 %d，最高分 %.3f）",
         question[:24],
-        limit,
+        "单路:" + ref_type if ref_type else "formula+case",
         threshold,
         len(kept),
         len(units),
+        sum(1 for u in kept if u.ref_type == "formula"),
+        sum(1 for u in kept if u.ref_type == "case"),
         units[0].score if units else 0.0,
     )
     return kept
