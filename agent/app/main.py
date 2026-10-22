@@ -23,11 +23,14 @@ import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import get_settings
@@ -42,6 +45,9 @@ logging.basicConfig(
 logger = logging.getLogger("herbmind-agent")
 
 settings = get_settings()
+
+# Swagger UI 的静态资源目录（本地化，见下方 /docs 路由）
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
 async def _warmup_embedding() -> None:
@@ -94,7 +100,28 @@ app = FastAPI(
     ),
     version=settings.app_version,
     lifespan=lifespan,
+    # 关掉默认的 /docs /redoc：它们从 jsdelivr CDN 拉 swagger-ui / redoc 资源，
+    # 国内网络会被 RST（控制台报 net::ERR_CONNECTION_RESET + SwaggerUIBundle is not defined），
+    # 页面一片空白。/docs 由下方路由用本地静态资源重建。
+    docs_url=None,
+    redoc_url=None,
 )
+
+# 本地静态资源（swagger-ui 的 js/css/图标），放 agent/app/static/ 下随代码一起走
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/docs", include_in_schema=False)
+async def swagger_ui_docs():
+    """本地化的接口文档页：不依赖任何外网 CDN，断网/内网也能打开。"""
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=f"{app.title} - Swagger UI",
+        swagger_js_url="/static/swagger-ui/swagger-ui-bundle.js",
+        swagger_css_url="/static/swagger-ui/swagger-ui.css",
+        swagger_favicon_url="/static/swagger-ui/favicon-32x32.png",
+    )
+
 
 # 前端本地开发直连时用得上；正式环境经网关 8080，不需要前端直连 8091
 app.add_middleware(
