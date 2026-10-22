@@ -51,3 +51,7 @@ class HealthData(CamelModel):
     version: str
     llm: dict[str, Any] = Field(description="模型名 + key 是否已配置（不调用、不花钱）")
     deps: dict[str, DepStatus] = Field(description="postgres / neo4j / redis 探测结果")
+    pg_pool: dict[str, Any] = Field(
+        default_factory=dict,
+        description="PG 连接池统计：poolSize=池内连接数，poolAvailable=空闲数，requestsWaiting=排队数",
+    )

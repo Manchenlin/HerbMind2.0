@@ -11,6 +11,7 @@ import asyncio
 from fastapi import APIRouter
 
 from app.config import get_settings
+from app.db import pool_stats
 from app.probes import probe_neo4j, probe_postgres, probe_redis
 from app.schemas import HealthData, R
 
@@ -21,11 +22,11 @@ router = APIRouter(tags=["agent"])
 async def health() -> R[HealthData]:
     s = get_settings()
 
-    # 三个探测都是阻塞 SDK，丢线程池并行跑
+    # 三个探测都是阻塞 SDK，丢线程池并行跑（连接已复用，不再每次握手）
     pg, neo4j, redis_status = await asyncio.gather(
-        asyncio.to_thread(probe_postgres, s),
-        asyncio.to_thread(probe_neo4j, s),
-        asyncio.to_thread(probe_redis, s),
+        asyncio.to_thread(probe_postgres),
+        asyncio.to_thread(probe_neo4j),
+        asyncio.to_thread(probe_redis),
     )
     deps = {"postgres": pg, "neo4j": neo4j, "redis": redis_status}
     all_ok = all(d.ok for d in deps.values())
@@ -41,5 +42,6 @@ async def health() -> R[HealthData]:
             "configured": s.llm_configured,
         },
         deps=deps,
+        pg_pool=pool_stats(),
     )
     return R.ok(data, msg="success" if all_ok else "部分依赖不可用，详见 deps")

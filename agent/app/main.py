@@ -19,6 +19,8 @@
 from __future__ import annotations
 
 import logging
+import time
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -27,6 +29,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
+from app.db import close_resources, init_resources
 from app.routers import health
 from app.schemas import R
 
@@ -43,7 +46,8 @@ settings = get_settings()
 async def lifespan(_app: FastAPI):
     """启动/关闭钩子（替代 FastAPI 已废弃的 @app.on_event）。
 
-    这里只打启动信息；将来 DB 连接池、HTTP 客户端、LLM 客户端都在这初始化/释放。
+    在这里建/关外部资源：PG 连接池、Neo4j Driver、Redis 客户端。
+    PG 连不上只记 error 不崩服务 —— 由 health 报告依赖状态。
     """
     logger.info(
         "Agent 服务启动：env_port=%s model=%s embedding=%s key_configured=%s",
@@ -52,8 +56,12 @@ async def lifespan(_app: FastAPI):
         settings.embedding_model,
         settings.llm_configured,
     )
-    yield
-    logger.info("Agent 服务已关闭")
+    init_resources(settings)
+    try:
+        yield
+    finally:
+        close_resources()
+        logger.info("Agent 服务已关闭")
 
 
 app = FastAPI(
@@ -74,6 +82,31 @@ app.add_middleware(
 
 # 所有业务路由统一挂在 /api/agent 下（与网关路由规则一致）
 app.include_router(health.router, prefix="/api/agent")
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """请求日志：每个请求一行「方法 路径 -> 状态码 耗时」，并回写 X-Request-Id 便于追踪。"""
+    request_id = uuid.uuid4().hex[:8]
+    start = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception:
+        cost_ms = (time.perf_counter() - start) * 1000
+        logger.exception("%s %s -> 500 (%.1fms) req=%s", request.method, request.url.path, cost_ms, request_id)
+        raise
+    cost_ms = (time.perf_counter() - start) * 1000
+    # 健康检查太频繁时可降为 debug，先保留 info 便于本地观察
+    logger.info(
+        "%s %s -> %s (%.1fms) req=%s",
+        request.method,
+        request.url.path,
+        response.status_code,
+        cost_ms,
+        request_id,
+    )
+    response.headers["X-Request-Id"] = request_id
+    return response
 
 
 @app.exception_handler(RequestValidationError)
