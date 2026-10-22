@@ -28,8 +28,9 @@ def get_chat_model():
         model=s.llm_model,
         api_key=s.llm_api_key,
         base_url=s.llm_api_base,
-        temperature=0.2,
-        timeout=30,
+        temperature=s.llm_temperature,
+        max_tokens=s.llm_max_tokens,
+        timeout=60,          # 问答场景比纯补全慢，60 秒兜底
         max_retries=2,
     )
 
@@ -61,3 +62,15 @@ async def chat(prompt: str) -> str:
     model = get_chat_model()
     result = await model.ainvoke(prompt)
     return result.content if isinstance(result.content, str) else str(result.content)
+
+
+async def chat_with_messages(messages: list[dict]) -> tuple[str, dict]:
+    """按 messages 调模型，返回 (回答文本, token 用量)。
+
+    messages 直接用 OpenAI 格式（role/content），方便将来平滑换成 Agent 调用。
+    """
+    model = get_chat_model()
+    result = await model.ainvoke(messages)
+    text = result.content if isinstance(result.content, str) else str(result.content)
+    usage = getattr(result, "usage_metadata", None) or {}
+    return text.strip(), dict(usage)

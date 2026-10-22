@@ -1,11 +1,11 @@
 """HerbMind Agent 服务入口（域3 智能域，:8091）。
 
-当前阶段：**骨架**。已实现：
-    GET /api/agent/health   服务自身 + LLM 配置 + PG/Neo4j/Redis 探测
+当前阶段：**M1 已完成**。已实现：
+    GET  /api/agent/health    服务自身 + LLM 配置 + PG/Neo4j/Redis 探测
+    POST /api/agent/ask/sync  同步问答（向量检索 + 大模型，带引用）
 
 尚未实现（按 project_plan/09_API契约清单.md §10 逐个补，不要提前写进文档谎报）：
     POST /api/agent/ask            SSE 流式问答
-    POST /api/agent/ask/sync       同步问答
     GET  /api/agent/history        会话历史
     POST /api/agent/coach          辨证教练
     POST /api/agent/formula/diff   加减推演
@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 import uuid
@@ -30,7 +31,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.db import close_resources, init_resources
-from app.routers import health
+from app.routers import ask, health
 from app.schemas import R
 
 logging.basicConfig(
@@ -40,6 +41,23 @@ logging.basicConfig(
 logger = logging.getLogger("herbmind-agent")
 
 settings = get_settings()
+
+
+async def _warmup_embedding() -> None:
+    """后台预热 embedding 通道。
+
+    实测首次调用 bge-m3 要 10~14 秒（TLS 握手 + 服务端模型冷启动），第二次只要 200~300ms。
+    启动时先在后台打一发，用户第一次提问就不用干等。
+    失败只记 warning：没网/没额度也不影响服务启动，等真用时再报错。
+    """
+    from app.llm import embed_query
+
+    try:
+        t0 = time.perf_counter()
+        await embed_query("预热")
+        logger.info("embedding 预热完成：%.0fms", (time.perf_counter() - t0) * 1000)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("embedding 预热失败（不影响正常使用）：%s", exc)
 
 
 @asynccontextmanager
@@ -57,9 +75,12 @@ async def lifespan(_app: FastAPI):
         settings.llm_configured,
     )
     init_resources(settings)
+    warmup = asyncio.create_task(_warmup_embedding()) if settings.llm_configured else None
     try:
         yield
     finally:
+        if warmup is not None:
+            warmup.cancel()
         close_resources()
         logger.info("Agent 服务已关闭")
 
@@ -82,6 +103,7 @@ app.add_middleware(
 
 # 所有业务路由统一挂在 /api/agent 下（与网关路由规则一致）
 app.include_router(health.router, prefix="/api/agent")
+app.include_router(ask.router, prefix="/api/agent")
 
 
 @app.middleware("http")

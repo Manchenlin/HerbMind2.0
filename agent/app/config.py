@@ -34,6 +34,14 @@ class Settings(BaseSettings):
     embedding_model: str = "BAAI/bge-m3"
     embedding_dim: int = 1024
 
+    # ---------- 检索 / 问答 ----------
+    retrieval_top_k: int = 5          # 每次召回几条内容单元（5 条约 3400 字，别太多稀释重点）
+    # 相似度下限：2026-10-22 实测——相关问题 0.61~0.73，无关问题（问天气）0.42~0.44，
+    # 所以 0.5 是干净的分界线：低于它直接判"无命中"，连 LLM 都不用调（省时省钱）
+    retrieval_min_score: float = 0.5
+    llm_max_tokens: int = 800          # 回答长度上限
+    llm_temperature: float = 0.2       # 医学问答求稳，不要发挥
+
     # ---------- 数据源 ----------
     pg_dsn: str = "postgresql://postgres:postgres@localhost:5432/herbmind"
     neo4j_uri: str = "bolt://localhost:7687"

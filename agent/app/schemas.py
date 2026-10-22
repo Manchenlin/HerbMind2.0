@@ -5,7 +5,7 @@
     code=0 成功，非 0 失败；JSON 字段一律 camelCase。
 """
 
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
@@ -54,4 +54,55 @@ class HealthData(CamelModel):
     pg_pool: dict[str, Any] = Field(
         default_factory=dict,
         description="PG 连接池统计：poolSize=池内连接数，poolAvailable=空闲数，requestsWaiting=排队数",
+    )
+
+
+# ==================== 问答（ask/sync） ====================
+
+
+class AskRequest(CamelModel):
+    """POST /api/agent/ask/sync 的请求体。"""
+
+    question: str = Field(min_length=2, max_length=500, description="用户问题")
+    top_k: int = Field(default=5, ge=1, le=10, description="检索条数（1~10）")
+    ref_type: Literal["formula", "case"] | None = Field(
+        default=None,
+        description="限定资料类型：formula=方剂、case=医案；不传=全部（注意：条文暂无向量）",
+    )
+    conversation_id: str | None = Field(
+        default=None,
+        description="续接会话 ID（M2 会话记忆落地后生效，当前仅透传）",
+    )
+
+
+class Citation(CamelModel):
+    """一条引用：前端拿它渲染"引用卡"，点开能跳原文。"""
+
+    id: str = Field(description="内容单元 ID，如 cu_9")
+    ref_type: str = Field(description="来源类型 formula / case")
+    ref_id: str = Field(description="来源实体 ID，如 f_3")
+    title: str = Field(default="", description="标题（方名 / 医案名）")
+    snippet: str = Field(description="原文片段，用于前端预览")
+    score: float = Field(description="余弦相似度（0~1，越大越像）")
+
+
+class AskUsage(CamelModel):
+    """耗时与 token 用量，便于观察成本与性能。"""
+
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    retrieve_ms: int = Field(default=0, description="向量检索耗时（含 embedding 调用）")
+    llm_ms: int = Field(default=0, description="大模型生成耗时")
+
+
+class AskData(CamelModel):
+    """POST /api/agent/ask/sync 的 data。"""
+
+    answer: str = Field(description="回答正文（会带 [1][2] 这样的引用角标）")
+    citations: list[Citation] = Field(default_factory=list, description="引用的资料列表")
+    usage: AskUsage = Field(default_factory=AskUsage)
+    degraded: bool = Field(
+        default=False,
+        description="true=大模型不可用或资料不足，answer 为降级内容（非模型生成）",
     )
