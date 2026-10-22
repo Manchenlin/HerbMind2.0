@@ -147,11 +147,16 @@ async def retrieve(
         # 真正的"麻黄汤"方剂排在 6 名开外 → 问方不给方，用户体验很差。
         # 改成方剂 60% + 医案 40% 的配额，保证"问方必有方、问案必有案"。
         formula_k = max(1, math.ceil(limit * FORMULA_RATIO))
-        case_k = max(1, limit - formula_k)
-        rows_f, rows_c = await asyncio.gather(
-            asyncio.to_thread(_query, "formula", formula_k),
-            asyncio.to_thread(_query, "case", case_k),
-        )
+        # 注意用 0 兜底而不是 1：limit=1 时只应召回 1 条，不能强塞一条医案
+        case_k = max(0, limit - formula_k)
+        if case_k:
+            rows_f, rows_c = await asyncio.gather(
+                asyncio.to_thread(_query, "formula", formula_k),
+                asyncio.to_thread(_query, "case", case_k),
+            )
+        else:
+            rows_f = await asyncio.to_thread(_query, "formula", formula_k)
+            rows_c = []
         units = _to_units(rows_f) + _to_units(rows_c)
         units.sort(key=lambda u: u.score, reverse=True)
 

@@ -13,11 +13,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import re
 import time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header, HTTPException
 
 from app.llm import chat_with_messages
 from app.rag.context import build_messages, degraded_answer, extract_citations
@@ -59,10 +60,23 @@ def clamp_citation_tags(text: str, max_index: int) -> tuple[str, list[int]]:
 
 
 @router.post("/ask/sync", response_model=R[AskData], summary="同步问答（向量检索 + 大模型）")
-async def ask_sync(req: AskRequest) -> R[AskData]:
-    """一次问答（非流式）。适合调试与不要求打字机效果的场景。"""
+async def ask_sync(
+    req: AskRequest,
+    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
+) -> R[AskData]:
+    """一次问答（非流式）。只允许经网关访问，必须带网关注入的 X-User-Id。"""
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="缺少 X-User-Id：该端点只应经网关访问")
     question = req.question.strip()
-    logger.info("问答请求：%s（topK=%s refType=%s）", question, req.top_k, req.ref_type)
+    # 问题原文属健康敏感信息，只记长度 + 指纹，便于排查日志关联而不泄露内容
+    logger.info(
+        "问答请求：user=%s len=%d fp=%s（topK=%s refType=%s）",
+        x_user_id,
+        len(question),
+        hashlib.sha1(question.encode("utf-8")).hexdigest()[:8],
+        req.top_k,
+        req.ref_type,
+    )
 
     # ---------- ① 检索 ----------
     t0 = time.perf_counter()

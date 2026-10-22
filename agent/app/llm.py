@@ -30,8 +30,8 @@ def get_chat_model():
         base_url=s.llm_api_base,
         temperature=s.llm_temperature,
         max_tokens=s.llm_max_tokens,
-        timeout=60,          # 问答场景比纯补全慢，60 秒兜底
-        max_retries=2,
+        timeout=25,          # 实测 1.4~8.6s，25s 足够；超时说明服务侧异常
+        max_retries=1,       # 最坏 25×2 = 50s，仍在网关 60s 之内，不会白烧第二轮
     )
 
 
@@ -52,9 +52,20 @@ def get_embeddings():
 
 
 async def embed_query(text: str) -> list[float]:
-    """把一句话转成 1024 维向量（同步 SDK 丢线程池，避免阻塞事件循环）。"""
+    """把一句话转成 1024 维向量（同步 SDK 丢线程池，避免阻塞事件循环）。
+
+    维度硬校验：换了模型但维度不同会立刻炸出来，而不是让检索静默返回垃圾结果。
+    同维度但换模型（语义空间不同）无法靠代码发现，只能靠 .env 里的注释约束。
+    """
     embeddings = get_embeddings()
-    return await asyncio.to_thread(embeddings.embed_query, text)
+    vector = await asyncio.to_thread(embeddings.embed_query, text)
+    expected = get_settings().embedding_dim
+    if len(vector) != expected:
+        raise RuntimeError(
+            f"embedding 维度不匹配：得到 {len(vector)} 维，期望 {expected} 维。"
+            f"请确认 EMBEDDING_MODEL 未被改动（必须与建库时一致）。"
+        )
+    return vector
 
 
 async def chat(prompt: str) -> str:

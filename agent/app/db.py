@@ -44,11 +44,16 @@ def init_resources(s: Settings) -> None:
             open=False,
             name="herbmind-agent-pg",
         )
-        _pg_pool.open(wait=True, timeout=5)
-        logger.info("PG 连接池已启动：min=1 max=5（%s）", _mask(s.pg_dsn))
-    except Exception as exc:  # noqa: BLE001 —— 启动期依赖失败交给 health 报
+        try:
+            _pg_pool.open(wait=True, timeout=5)
+            logger.info("PG 连接池已启动：min=1 max=5（%s）", _mask(s.pg_dsn))
+        except Exception as exc:  # noqa: BLE001
+            # 池对象保留：PG 稍后恢复时 psycopg_pool 会自动补连接。
+            # 一旦置 None，本进程余生都用不了库（必须重启容器才能恢复）。
+            logger.warning("PG 暂时不可达（池已保留，恢复后自动重连）：%s", exc)
+    except Exception as exc:  # noqa: BLE001 —— 建池本身失败（配置错/驱动缺失）
         _pg_pool = None
-        logger.error("PG 连接池启动失败（health 会显示 postgres 不可用）：%s", exc)
+        logger.error("PG 连接池创建失败（health 会显示 postgres 不可用）：%s", exc)
 
     # ---------- Neo4j Driver（内部自带池，全局一个就够） ----------
     try:

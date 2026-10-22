@@ -42,11 +42,11 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 800          # 回答长度上限
     llm_temperature: float = 0.2       # 医学问答求稳，不要发挥
 
-    # ---------- 数据源 ----------
-    pg_dsn: str = "postgresql://postgres:postgres@localhost:5432/herbmind"
+    # ---------- 数据源（账号密码一律只从 .env 读，源码里不留真实凭据） ----------
+    pg_dsn: str = "postgresql://postgres@localhost:5432/herbmind"
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"
-    neo4j_password: str = "herbmind123"
+    neo4j_password: str = ""
     redis_url: str = "redis://localhost:6379/0"
 
     # ---------- 跨域 ----------

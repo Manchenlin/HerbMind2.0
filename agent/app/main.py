@@ -28,6 +28,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import get_settings
 from app.db import close_resources, init_resources
@@ -87,7 +88,10 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(
     title="HerbMind Agent 服务",
-    description="域3 智能域：问答 / 辨证教练 / 评分 / 图谱（当前仅骨架 + health）",
+    description=(
+        "域3 智能域。已实现：GET /api/agent/health、POST /api/agent/ask/sync；"
+        "待实现：ask(SSE 流式) / history / coach / formula-diff / grade"
+    ),
     version=settings.app_version,
     lifespan=lifespan,
 )
@@ -111,11 +115,20 @@ async def log_requests(request: Request, call_next):
     """请求日志：每个请求一行「方法 路径 -> 状态码 耗时」，并回写 X-Request-Id 便于追踪。"""
     request_id = uuid.uuid4().hex[:8]
     start = time.perf_counter()
+    # 存进 state：全局异常处理器据此给 500 响应补回 X-Request-Id
+    request.state.request_id = request_id
     try:
         response = await call_next(request)
     except Exception:
         cost_ms = (time.perf_counter() - start) * 1000
-        logger.exception("%s %s -> 500 (%.1fms) req=%s", request.method, request.url.path, cost_ms, request_id)
+        # 堆栈由全局异常处理器统一打印一次，这里只留摘要，避免同一异常刷两遍
+        logger.warning(
+            "%s %s -> 未处理异常 (%.1fms) req=%s",
+            request.method,
+            request.url.path,
+            cost_ms,
+            request_id,
+        )
         raise
     cost_ms = (time.perf_counter() - start) * 1000
     # 健康检查太频繁时可降为 debug，先保留 info 便于本地观察
@@ -131,6 +144,21 @@ async def log_requests(request: Request, call_next):
     return response
 
 
+@app.exception_handler(StarletteHTTPException)
+async def on_http_error(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    """HTTPException（401 鉴权失败 / 404 等）也套 R 外壳，前端只写一套解析。
+
+    FastAPI 默认对 HTTPException 返回 {"detail": "..."}，与业务错误的
+    {code,msg,data} 不是一种格式，所以这里统一掉。
+    """
+    request_id = getattr(request.state, "request_id", "")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=R.fail(exc.status_code, str(exc.detail)).model_dump(by_alias=True),
+        headers={"X-Request-Id": request_id} if request_id else None,
+    )
+
+
 @app.exception_handler(RequestValidationError)
 async def on_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
     """参数校验失败也套 R 外壳，前端不用区分两种错误格式。"""
@@ -144,10 +172,13 @@ async def on_validation_error(request: Request, exc: RequestValidationError) -> 
 @app.exception_handler(Exception)
 async def on_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
     """兜底：任何未捕获异常都转成 R 外壳，避免前端拿到裸 500 HTML。"""
-    logger.exception("未捕获异常 %s", request.url.path)
+    request_id = getattr(request.state, "request_id", "")
+    logger.exception("未捕获异常 %s req=%s", request.url.path, request_id)
     return JSONResponse(
         status_code=500,
         content=R.fail(500, f"服务内部错误：{type(exc).__name__}").model_dump(by_alias=True),
+        # 异常路径不经过中间件的统一写头，这里补回，保证 500 也能对上日志
+        headers={"X-Request-Id": request_id} if request_id else None,
     )
 
 

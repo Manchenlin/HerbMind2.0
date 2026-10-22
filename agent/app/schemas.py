@@ -64,7 +64,8 @@ class AskRequest(CamelModel):
     """POST /api/agent/ask/sync 的请求体。"""
 
     question: str = Field(min_length=2, max_length=500, description="用户问题")
-    top_k: int = Field(default=5, ge=1, le=10, description="检索条数（1~10）")
+    # 不设数字默认值，交给 retrieve() 读 RETRIEVAL_TOP_K，避免两处默认值打架导致配置失效
+    top_k: int | None = Field(default=None, ge=1, le=10, description="检索条数（1~10），不传则取配置")
     ref_type: Literal["formula", "case"] | None = Field(
         default=None,
         description="限定资料类型：formula=方剂、case=医案；不传=全部（注意：条文暂无向量）",
