@@ -32,16 +32,8 @@ const PAGES: Array<{ path: string; title: string; owner: string; proto: string }
   { path: '/me/wrong', title: '错题本', owner: '域2', proto: 'profile.html' },
   { path: '/me/collection', title: '我的方证库', owner: '域2', proto: 'favorites.html' },
   { path: '/me/path', title: '学习路径', owner: '域2', proto: 'profile.html' },
-  { path: '/discuss', title: '讨论区', owner: '域2', proto: 'case.html' },
-  // ---- 域3 智能域（问）----
-  { path: '/graph', title: '图谱探索', owner: '域3', proto: 'graph.html' },
-  { path: '/graph/formula/:id', title: '方心子图', owner: '域3', proto: 'graph.html' },
-  { path: '/graph/map', title: '相似度地图', owner: '域3', proto: 'graph-map.html' },
-  { path: '/ask', title: '智能问答', owner: '域3', proto: 'ask.html' },
-  { path: '/ask/history', title: '会话历史', owner: '域3', proto: 'ask.html' },
-  { path: '/admin', title: '治理后台', owner: '域3', proto: 'admin.html' },
-  { path: '/admin/review', title: '复核工单', owner: '域3', proto: 'admin.html' },
-  { path: '/admin/issues', title: 'OCR 疑点', owner: '域3', proto: 'admin.html' }
+  { path: '/discuss', title: '讨论区', owner: '域2', proto: 'case.html' }
+  // 域3 智能域的 8 个页面已实现，见下方「域3（已实现）」段，此处不再列入占位
 ]
 
 const routes: RouteRecordRaw[] = [
@@ -57,6 +49,55 @@ const routes: RouteRecordRaw[] = [
     name: 'login',
     component: () => import('@/views/LoginView.vue'),
     meta: { title: '登录 / 注册', owner: '域2', proto: 'login.html' }
+  },
+  // ---- 域3 智能域（问）：8 页已实现，视觉照 graph / graph-map / ask / admin 四个原型 ----
+  {
+    path: '/graph',
+    name: 'graph',
+    component: () => import('@/views/GraphView.vue'),
+    meta: { title: '图谱探索', owner: '域3', proto: 'graph.html' }
+  },
+  {
+    path: '/graph/formula/:id',
+    name: 'graph-formula',
+    component: () => import('@/views/GraphFormulaView.vue'),
+    meta: { title: '方心子图', owner: '域3', proto: 'graph.html' }
+  },
+  {
+    path: '/graph/map',
+    name: 'graph-map',
+    component: () => import('@/views/GraphMapView.vue'),
+    meta: { title: '相似度地图', owner: '域3', proto: 'graph-map.html' }
+  },
+  {
+    path: '/ask',
+    name: 'ask',
+    component: () => import('@/views/AskView.vue'),
+    meta: { title: '智能问答', owner: '域3', proto: 'ask.html' }
+  },
+  {
+    path: '/ask/history',
+    name: 'ask-history',
+    component: () => import('@/views/AskHistoryView.vue'),
+    meta: { title: '会话历史', owner: '域3', proto: 'ask.html' }
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('@/views/AdminView.vue'),
+    meta: { title: '治理后台', owner: '域3', proto: 'admin.html' }
+  },
+  {
+    path: '/admin/review',
+    name: 'admin-review',
+    component: () => import('@/views/AdminReviewView.vue'),
+    meta: { title: '复核工单', owner: '域3', proto: 'admin.html' }
+  },
+  {
+    path: '/admin/issues',
+    name: 'admin-issues',
+    component: () => import('@/views/AdminIssuesView.vue'),
+    meta: { title: 'OCR 疑点', owner: '域3', proto: 'admin.html' }
   },
   // ---- 待实现（占位，含负责人与原型指引）----
   ...PAGES.map<RouteRecordRaw>((p) => ({
