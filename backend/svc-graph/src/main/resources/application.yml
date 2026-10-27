@@ -1,0 +1,19 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: svc-graph
+  jackson:
+    default-property-inclusion: non_null   # props 为空时不输出 null 字段
+
+# Neo4j 连接：默认值与 docker-compose.infra.yml 的 NEO4J_AUTH 一致
+# 生产/他人机器请用环境变量覆盖，不要把真实密码写进仓库
+neo4j:
+  uri: ${NEO4J_URI:bolt://localhost:7687}
+  username: ${NEO4J_USER:neo4j}
+  password: ${NEO4J_PASSWORD:herbmind123}
+
+logging:
+  level:
+    com.herbmind.svc.graph: info

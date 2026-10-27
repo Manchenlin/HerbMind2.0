@@ -14,6 +14,7 @@
     <module>herbmind-common</module>
     <module>herbmind-contract</module>
     <module>svc-catalog</module>
+    <module>svc-graph</module>
     <module>herbmind-bff</module>
     <module>herbmind-gateway</module>
   </modules>

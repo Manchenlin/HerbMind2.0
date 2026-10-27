@@ -107,3 +107,81 @@ class AskData(CamelModel):
         default=False,
         description="true=大模型不可用或资料不足，answer 为降级内容（非模型生成）",
     )
+
+
+# ==================== 方剂加减查证（formula/diff） ====================
+
+
+class FormulaDiffRequest(CamelModel):
+    """POST /api/agent/formula/diff 的请求体。"""
+
+    base_formula: str = Field(
+        min_length=1, max_length=50,
+        description="基础方：方名、别名或方剂 ID（如 桂枝汤 / f_5）",
+    )
+    add: list[str] = Field(
+        default_factory=list, max_length=10,
+        description="要加的药味名（如 ['葛根']）；不超过 10 味",
+    )
+    remove: list[str] = Field(
+        default_factory=list, max_length=10,
+        description="要减的药味名",
+    )
+
+
+class FormulaBrief(CamelModel):
+    """方剂基本信息。efficacy / syndromeText / classicText 均为**语料原文摘录**，非系统推断。"""
+
+    id: str
+    name: str
+    alias: str = ""
+    herbs: list[str] = Field(default_factory=list, description="药味名（按库内顺序）")
+    efficacy: str = Field(default="", description="功效——语料原文摘录")
+    syndrome_text: str = Field(default="", description="证治归纳——语料原文摘录")
+    page: str = ""
+    classic_text: str = Field(default="", description="经典条文段落——语料原文摘录（不含条文号解析）")
+
+
+class DiffMatchedFormula(CamelModel):
+    """组成与结果**逐味完全一致**的成方。"""
+
+    id: str
+    name: str
+    alias: str = ""
+    efficacy: str = ""
+    syndrome_text: str = ""
+    page: str = ""
+    classic_text: str = ""
+    duplicate_name: bool = Field(
+        default=False, description="true=库中该方名有重复收录（同方多条目），不是两个不同的方"
+    )
+
+
+class DiffSimilarFormula(CamelModel):
+    """组成相近但**并非同一方**，仅供对照。"""
+
+    id: str
+    name: str
+    jaccard: float = Field(description="药味集合 Jaccard 相似度（0~1）")
+    note: str = Field(default="", description="固定提示：非同一方，仅供参考")
+
+
+class FormulaDiffData(CamelModel):
+    """POST /api/agent/formula/diff 的 data。"""
+
+    base: FormulaBrief
+    removed: list[str] = Field(default_factory=list, description="实际从基础方去掉的药味")
+    added: list[str] = Field(default_factory=list, description="实际新增的药味")
+    result_herbs: list[str] = Field(default_factory=list, description="加减后的结果组成")
+    matched_formulas: list[DiffMatchedFormula] = Field(
+        default_factory=list, description="组成完全一致的成方；空数组表示库内无对应记载"
+    )
+    match_hint: str = Field(default="", description="未命中时的说明（是结论，不是报错）")
+    similar_formulas: list[DiffSimilarFormula] = Field(default_factory=list)
+    warnings: list[str] = Field(
+        default_factory=list, description="药名疑似解析残留、要减的药不在方中等提示"
+    )
+    dose_compared: bool = Field(
+        default=False, description="本次是否比对了剂量（当前库内剂量缺失，恒为 false）"
+    )
+    notice: str = Field(default="", description="免责声明：不推断功效、不构成处方建议")

@@ -1,7 +1,8 @@
 # 08 · Agent 服务设计（LangChain 1.x）
 
 > 服务名：`herbmind-agent`（Python 3.11 / conda env `herbmind`），FastAPI + **LangChain 1.x**（构建在 LangGraph 之上），端口 :8091，注册 Nacos，经网关路由 `/api/agent/**`。
-> 定位：**平台智能中枢**——问答、辨证教练、加减推演、评分、个性化推荐都经它调度。
+> 定位：**平台智能中枢**——问答、辨证教练、加减查证、评分、个性化推荐都经它调度。
+> ⚠️ 本服务所有输出受 **00 文档「设计红线」** 约束：只查证与引用，不推断疗效、不给处方建议。
 
 ## 1. 为什么是 LangChain 1.x（而非旧版/裸调用）
 
@@ -112,7 +113,7 @@ agent/
 | `search_quote` | 二期 | article_no / classic / keyword | 条文列表 | svc-catalog |
 | `graph_path` | 二期 | from, to | 路径列表 | svc-graph |
 | `herb_statistics` | 二期 | scope(经典/章节), metric | 频次表 | svc-insight |
-| `formula_diff` | 二期 | base_formula, add[], remove[] | 新方 + 功效变化 + 相似成方 | svc-graph/catalog |
+| `formula_diff` | 二期 | base_formula, add[], remove[] | 结果组成 + **命中的经典成方（含原文条文与出处）** + 相似成方（Jaccard，标注"非同一方"）；**不返回任何功效推断** | PG `formula_herb`（当前）/ svc-catalog（就绪后迁移） |
 | `get_user_profile` | 二期 | user_id | 画像/薄弱点 | svc-training |
 
 > **一期只挂 6 个高频工具**（`search_formula`、`search_case`、`semantic_recall`、`graph_neighbors`、`syndrome_score`、`dosage_convert`）——工具数 ≤ 6~8 可显著提升 LLM 选择准确率；二期再补至 11。
@@ -178,7 +179,7 @@ result = scorer.invoke([...])   # -> SyndromeScore
 | `/api/agent/ask` | POST | 主问答（SSE 流式） |
 | `/api/agent/ask/sync` | POST | 同步问答（调试/降级） |
 | `/api/agent/coach` | POST | 辨证教练多轮追问 |
-| `/api/agent/formula/diff` | POST | 方剂加减推演 |
+| `/api/agent/formula/diff` | POST | 方剂加减**查证**（只比对组成 + 引用原文，不推断功效） |
 | `/api/agent/grade` | POST | 练习自动评分（结构化） |
 | `/api/agent/health` | GET | 健康检查（白名单） |
 

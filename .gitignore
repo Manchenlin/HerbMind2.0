@@ -27,9 +27,14 @@ database/seed/
 # 流程草稿区（executing-plans）
 .superpowers/
 
+# 补录脚本每次写入留下的回滚日志（临时产物，不进仓库）
+database/etl/data/_apply_log_*.json
+
 # OS
 .DS_Store
 Thumbs.db
 
 # ★ 智能体全局记忆：只存本机，不进仓库（含协作口径与实核结论）
+# PROJECT_MEMORY.md 是索引；细节按主题拆在 memory/ 各分册
 PROJECT_MEMORY.md
+memory/

@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncIterator
 from functools import lru_cache
 
 from app.config import get_settings
@@ -32,6 +33,8 @@ def get_chat_model():
         max_tokens=s.llm_max_tokens,
         timeout=25,          # 实测 1.4~8.6s，25s 足够；超时说明服务侧异常
         max_retries=1,       # 最坏 25×2 = 50s，仍在网关 60s 之内，不会白烧第二轮
+        # 流式模式下 OpenAI 协议默认不回 usage，必须显式要，否则 /ask 的 token 统计永远为 0
+        stream_usage=True,
     )
 
 
@@ -85,3 +88,34 @@ async def chat_with_messages(messages: list[dict]) -> tuple[str, dict]:
     text = result.content if isinstance(result.content, str) else str(result.content)
     usage = getattr(result, "usage_metadata", None) or {}
     return text.strip(), dict(usage)
+
+
+async def chat_stream(messages: list[dict]) -> AsyncIterator[tuple[str, object]]:
+    """流式对话，产出 `("delta", 文本片段)` 与末尾一条 `("usage", {...})`。
+
+    为什么用元组而不是直接 yield 字符串：
+    调用方需要区分"正文片段"和"用量统计"——后者不能当正文拼进回答，
+    但只有生成完才知道。用带标签的事件比在生成器外挂一个可变 dict 更清楚。
+
+    注意：片段的粒度由上游决定（实测多数是 1~4 个汉字），
+    不要假设"每次一个 token"，前端按收到的文本原样追加即可。
+    """
+    model = get_chat_model()
+    last_usage: dict = {}
+    async for chunk in model.astream(messages):
+        usage = getattr(chunk, "usage_metadata", None)
+        if usage:
+            last_usage = dict(usage)
+        content = chunk.content
+        if isinstance(content, str):
+            if content:
+                yield ("delta", content)
+        elif isinstance(content, list):
+            # 部分兼容实现会把内容拆成分段数组（如 [{"type":"text","text":"..."}]）
+            for part in content:
+                if isinstance(part, dict) and part.get("type") == "text":
+                    piece = part.get("text") or ""
+                    if piece:
+                        yield ("delta", piece)
+    if last_usage:
+        yield ("usage", last_usage)

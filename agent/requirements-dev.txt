@@ -1,0 +1,8 @@
+# HerbMind Agent 测试依赖（只在开发/CI 装，不进运行镜像）
+# 安装：conda activate herbmind && pip install -r requirements-dev.txt
+# 国内镜像：pip install -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+-r requirements.txt
+
+# --- 测试 ---
+pytest>=8.0            # 实测 9.1.1；tests/ 下用例也可不装 pytest 直跑

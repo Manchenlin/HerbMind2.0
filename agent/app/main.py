@@ -1,14 +1,15 @@
 """HerbMind Agent 服务入口（域3 智能域，:8091）。
 
-当前阶段：**M1 已完成**。已实现：
-    GET  /api/agent/health    服务自身 + LLM 配置 + PG/Neo4j/Redis 探测
-    POST /api/agent/ask/sync  同步问答（向量检索 + 大模型，带引用）
+当前阶段：已实现：
+    GET  /api/agent/health        服务自身 + LLM 配置 + PG/Neo4j/Redis 探测
+    POST /api/agent/ask/sync      同步问答（向量检索 + 大模型，带引用）
+    POST /api/agent/ask           流式问答（SSE：tool → citation → token → done）
+    POST /api/agent/formula/diff  方剂加减查证（纯规则，零大模型，不推断功效）
 
 尚未实现（按 project_plan/09_API契约清单.md §10 逐个补，不要提前写进文档谎报）：
-    POST /api/agent/ask            SSE 流式问答
-    GET  /api/agent/history        会话历史
+    GET  /api/agent/history        会话历史（依赖 agent_conversation/agent_message 落库；
+                                   该表 user_id 有外键指向 app_user，须等域2 登录链路产出真实用户）
     POST /api/agent/coach          辨证教练
-    POST /api/agent/formula/diff   加减推演
     POST /api/agent/grade          结构化评分（供 BFF 编排调用）
 
 启动（在 agent/ 目录下）：
@@ -35,7 +36,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import get_settings
 from app.db import close_resources, init_resources
-from app.routers import ask, health
+from app.routers import ask, formula, health
 from app.schemas import R
 
 logging.basicConfig(
@@ -95,8 +96,9 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(
     title="HerbMind Agent 服务",
     description=(
-        "域3 智能域。已实现：GET /api/agent/health、POST /api/agent/ask/sync；"
-        "待实现：ask(SSE 流式) / history / coach / formula-diff / grade"
+        "域3 智能域。已实现：GET /api/agent/health、POST /api/agent/ask/sync、"
+        "POST /api/agent/ask（SSE 流式）、POST /api/agent/formula/diff（加减查证）；"
+        "待实现：history / coach / grade"
     ),
     version=settings.app_version,
     lifespan=lifespan,
@@ -135,6 +137,7 @@ app.add_middleware(
 # 所有业务路由统一挂在 /api/agent 下（与网关路由规则一致）
 app.include_router(health.router, prefix="/api/agent")
 app.include_router(ask.router, prefix="/api/agent")
+app.include_router(formula.router, prefix="/api/agent")
 
 
 @app.middleware("http")

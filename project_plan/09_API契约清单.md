@@ -193,11 +193,11 @@ BFF 是**前端所有请求的落点**，按页面聚合各 svc 的 `/internal/*
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | `/api/agent/ask` | 问答（SSE 流式） |
-| POST | `/api/agent/ask/sync` | 同步问答（调试） |
+| POST | `/api/agent/ask` | 问答（SSE 流式）✅ 2026-10-26 已实现 |
+| POST | `/api/agent/ask/sync` | 同步问答（调试）✅ 2026-10-22 已实现 |
 | GET | `/api/agent/history` | 会话列表 / 历史（**新增**） |
 | POST | `/api/agent/coach` | 辨证教练 |
-| POST | `/api/agent/formula/diff` | 加减推演 |
+| POST | `/api/agent/formula/diff` | 加减**查证**（组成比对 + 引用原文；**不推断功效**，见 00 文档设计红线一） |
 | POST | `/api/agent/grade` | 结构化评分（**供 BFF 编排调用**） |
 | GET | `/api/agent/health` | 健康检查（白名单） |
 
@@ -324,14 +324,38 @@ Authorization: Bearer <token>
 | `question` | string | 是 | 提问 | `"无汗而喘、脉浮紧用什么方？"` |
 | `conversationId` | string | 否 | 续接会话 | `"c_1"` |
 
-- **响应**：`text/event-stream`（SSE），事件类型：
+- **响应**：`text/event-stream`（SSE），事件类型（**实际实现，2026-10-26 已跑通**）：
 
 | event | data 示例 | 说明 |
 |---|---|---|
-| `tool` | `{"name":"search_formula","status":"start"}` | 工具调用轨迹（前端渲染"工具卡"） |
-| `token` | `{"text":"无汗"}` | 逐字输出（打字机） |
-| `citation` | `{"id":"q_35","type":"quote","sourceId":"35","page":"19","text":"太阳病……"}` | 引用卡（可跳原文） |
-| `done` | `{"conversationId":"c_1","degraded":false}` | 结束；`degraded=true` 表示降级回复 |
+| `tool` | `{"name":"retrieval","status":"start"}` | 工具调用轨迹（前端渲染"工具卡"） |
+| `tool` | `{"name":"retrieval","status":"done","hits":5}` | 检索结束 + 命中条数（**新增**，便于工具卡收起） |
+| `citation` | `{"index":1,"id":"cu_14","refType":"formula","refId":"f_5","title":"桂枝汤","snippet":"…","score":0.64}` | 引用卡；`index` 就是正文里 `[n]` 的 n（**新增**） |
+| `token` | `{"text":"无汗"}` | 逐字输出（打字机），粒度 1~4 字不等 |
+| `done` | `{"conversationId":"c_61c46a22","degraded":false,"usage":{…},"illegalCitations":[]}` | 结束；`usage` 与 `illegalCitations`（**新增**） |
+
+> 🔴 **字段名变更，前端请以此表为准（2026-10-26）**
+>
+> 本节初稿写的引用卡字段是 `type` / `sourceId` / `text`，但实际实现（对齐 `agent/app/schemas.py::Citation`，
+> 与 `/ask/sync` 的 `citations` 用的是同一套模型）为 `refType` / `refId` / `snippet`，并多出 `title` / `score`。
+>
+> **映射关系**：`type → refType`、`sourceId → refId`、`text → snippet`。旧字段一律不再下发。
+>
+> 请求体与初稿的差异：实现复用了 `AskRequest`，因此额外接受 `topK`(1~10) 与 `refType`(`formula`/`case`)，
+> 不传则走默认（方剂 60% + 医案 40% 的配额双路召回）。
+>
+> **限流**：已按本节错误码要求实现 429（单用户 60 秒内 20 次，单进程内存计数）。
+> 另注：`X-User-Id` 是网关信任头、服务端不校验来源，因此 **8091 端口必须只允许网关访问**。
+
+**事件顺序固定**：`tool(start)` → `tool(done)` → `citation × N` → `token × N` → `done`。
+引用卡先于正文，前端可在首字出现前建好卡片表，避免角标先到、卡片后到。
+
+**两个新增字段的用途**：
+- `done.usage`：`{retrieveMs, llmMs, promptTokens, completionTokens, totalTokens}`，可直接打到调试面板。
+- `done.illegalCitations`：模型编造的越界角标编号（如资料只有 5 条却写了 `[6]`）。流式下 token 已发出、正文改不了，只能回传让前端把对应角标擦掉，否则会出现"引用了一张不存在的卡"。
+
+> ⚠️ `conversationId` 目前**只回显不落库**：`agent_conversation` / `agent_message` 表已建但为空，
+> 且 `user_id` 外键指向 `app_user`，未经网关的真实用户 ID 插不进去。多轮持久化留到 M2。
 
 - **错误码**：401 / 429 限流 / 5xxx（含 degraded）
 - **请求示例**
