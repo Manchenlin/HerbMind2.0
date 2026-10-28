@@ -30,8 +30,38 @@ from app.db import close_resources, init_resources  # noqa: E402
 from app.rag import formula_diff             # noqa: E402
 
 
+def _pg_ready() -> str | None:
+    """探测 PG 是否可用：返回 None=可用，否则返回人类可读的不可用原因。
+
+    本模块断言的是**库内真实数据**（245 方逐味核对），库没起就无从验证。
+    所以库里没起时整模块 skip —— 而不是 13 条一起红，把真正的回归信号盖掉。
+    """
+    try:
+        init_resources(get_settings())
+        from app.db import get_pg_pool
+
+        with get_pg_pool().connection(timeout=3) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM formula")
+                formulas = cur.fetchone()[0]
+        # 只连通不够：快照没导时同样会 13 条红，且报错信息毫无指向性
+        if formulas < 200:
+            return f"PG 可连但数据缺失（formula 仅 {formulas} 行，应有 245 行）：请先导入快照"
+        return None
+    except Exception as exc:  # noqa: BLE001
+        return (
+            f"PG 不可用（{type(exc).__name__}: {exc}）"
+            "：本模块断言库内真实数据，请先 bash scripts/start-infra.sh 并导入快照"
+        )
+
+
 def setup_module(_module) -> None:
-    init_resources(get_settings())
+    reason = _pg_ready()
+    if reason:
+        close_resources()  # 别把一个连不上的池留给后面的用例
+        import pytest
+
+        pytest.skip(reason)
 
 
 def teardown_module(_module) -> None:
@@ -178,7 +208,10 @@ if __name__ == "__main__":
     # 不依赖 pytest 也能直跑：逐个执行并汇总
     import traceback
 
-    init_resources(get_settings())
+    _reason = _pg_ready()
+    if _reason:
+        print(_reason)
+        sys.exit(0)  # 环境没起，不算用例失败
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0
     for fn in tests:
