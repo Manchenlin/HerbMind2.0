@@ -5,10 +5,13 @@ spring:
   application:
     name: svc-catalog
   datasource:
-    url: jdbc:postgresql://localhost:5432/herbmind
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
+    # 使用 H2 内存数据库，开启 PostgreSQL 兼容模式
+    url: jdbc:h2:mem:herbmind;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+    # 如果需要初始化表结构和数据，请在这里指定 SQL 文件（默认会找 classpath:schema.sql 和 data.sql）
+    # initialization-mode: always
   jackson:
     default-property-inclusion: non_null
     serialization:
@@ -16,7 +19,7 @@ spring:
 
 mybatis-plus:
   configuration:
-    map-underscore-to-camel-case: true   # book_id -> bookId
+    map-underscore-to-camel-case: true  # book_id -> bookId
   global-config:
     db-config:
-      id-type: input                      # ID 由业务传入（TEXT）
+      id-type: input                    # ID 由业务传入（TEXT）

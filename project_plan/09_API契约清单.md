@@ -381,3 +381,285 @@ data: {"conversationId":"c_1","degraded":false}
 ```
 
 > 其余接口按 §0.2 的 8 项逐一补齐；本节的格式即为**模板**。
+
+---
+
+## 14. 域1（内容域）M2 补全 · 接口细则
+
+> 负责人：A。本节是 §2 / §4 / §5 / §8 的**字段级补充**，不改变已有路径与语义。
+> 所有 `/internal/**` 返回**裸 DTO**（不包 R）；所有 `/api/biz/**` 由 BFF 包 `R<T>`。
+> 字段一律 camelCase；时间 ISO 8601；ID 为字符串。
+
+### 14.1 `GET /api/biz/catalog/books` —— 书架 / 语料列表
+
+- **归属**：域1　**负责人**：A　**鉴权**：需要（当前网关未开鉴权，联调期可匿名）
+- **请求参数**：无
+- **响应 `data`：`BookVO[]`**
+
+| 字段 | 类型 | 说明 | 示例 |
+|---|---|---|---|
+| `id` | string | 语料 ID | `"bk_1"` |
+| `title` | string | 书名 | `"伤寒论"` |
+| `bookType` / `bookTypeLabel` | string | 类型码 / 中文 | `"fz"` / `"方证 · 医案"` |
+| `author` / `dynasty` | string | 作者 / 朝代，可空 | `"张仲景"` |
+| `ingestStatus` / `statusLabel` | string | 收录状态码 / 中文 | `"已发布"` |
+| `createdAt` | string | ISO 时间 | `"2026-10-12T19:55:29+08:00"` |
+| `unitCount` / `nodeCount` / `formulaCount` / `caseCount` | number | 条目 / 节点 / 方剂 / 医案数 | `535` |
+
+- **错误码**：5000（数据库不可用）
+- **响应示例**
+
+```json
+{ "code": 0, "msg": "success", "data": [
+  { "id": "bk_1", "title": "伤寒论", "bookType": "fz", "bookTypeLabel": "方证 · 医案",
+    "author": "张仲景", "dynasty": "汉", "ingestStatus": "已发布", "statusLabel": "已发布",
+    "createdAt": "2026-10-12T19:55:29+08:00",
+    "unitCount": 535, "nodeCount": 27, "formulaCount": 114, "caseCount": 136 } ] }
+```
+
+### 14.2 `GET /api/biz/catalog/node/{id}` —— 目录节点详情
+
+- **归属**：域1　**负责人**：A　**鉴权**：需要
+- **路径参数**：`id` string 必填，节点 ID（如 `"n_g1"`）
+- **响应 `data`：`NodeDetailVO`**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `node` | BookTreeNode | `{id,title,nodeType,children[]}`，children 只含直接子节点 |
+| `bookId` / `bookTitle` / `classicId` | string | 所属语料 / 经典 |
+| `parentId` / `pathText` | string | 父节点 / 路径文本，可空 |
+| `breadcrumb` | `{id,name}[]` | 从根到父级的面包屑 |
+| `formulas` | `FormulaBriefVO[]` | 该节点**含所有后代节点**下的方剂 |
+| `cases` | `CaseBriefVO[]` | 上述方剂关联的医案 |
+| `quotes` | `QuoteRefVO[]` | 引用上述方剂的条文（最多 6 条） |
+| `childCount` | number | 直接子节点数 |
+
+`FormulaBriefVO = { id, name, efficacy, syndrome, page, nodeId, nodeTitle, herbs: HerbVO[] }`
+`HerbVO = { name, dose:number, unit, role:enum(君,臣,佐,使) | null, seq }`
+
+- **错误码**：4000（节点不存在）/ 5000
+- **响应示例**
+
+```json
+{ "code": 0, "msg": "success", "data": {
+  "node": { "id": "n_g1", "title": "一、太阳伤寒类方证", "nodeType": "category", "children": [] },
+  "bookId": "bk_1", "bookTitle": "伤寒论", "classicId": "c_1",
+  "parentId": "n_s1", "childCount": 0,
+  "breadcrumb": [ {"id":"n_h1","name":"第二章《伤寒论》方证案例研究"}, {"id":"n_s1","name":"第一节 太阳病方证案例"} ],
+  "formulas": [ { "id":"f_1","name":"麻黄汤","efficacy":"发汗解表，宣肺平喘","page":"19-22",
+                  "herbs":[ {"name":"麻黄","dose":9,"unit":"g","role":"君","seq":1} ] } ],
+  "cases": [ { "id":"cs_1","title":"麻黄汤（加味）","mainFormulaId":"f_1","page":"19" } ],
+  "quotes": [ { "id":"q_1","articleNo":"35","classicName":"伤寒论","content":"太阳病……麻黄汤主之。","label":"《伤寒论》第 35 条" } ] } }
+```
+
+### 14.3 `GET /api/biz/formula/{id}/page` —— 方剂详情页数据
+
+- **归属**：域1　**负责人**：A　**鉴权**：需要
+- **响应 `data`：`FormulaVO`**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `id` / `name` / `pinyin` / `alias` | string | 基本信息，pinyin/alias 可空 |
+| `efficacy` / `syndrome` / `sourceText` | string | 功效 / 主治证候 / 证治归纳原文，可空 |
+| `page` | string | 原书页码 |
+| `nodeId` / `nodeTitle` / `chapter` | string | 所属分类 / 章 |
+| `bookId` / `bookTitle` / `classicName` | string | 语料 / 经典 |
+| `herbs` | HerbVO[] | 君臣佐使，按 seq |
+| `quotes` | QuoteRefVO[] | 原文回顾（最多 6 条） |
+| `cases` | CaseBriefVO[] | 该方主治医案 |
+| `related` | FormulaBriefVO[] | 同类 / 共享药味方剂（最多 6 个） |
+
+`QuoteRefVO = { id, articleNo, classicName, content, plainText, page, label }`
+`CaseBriefVO = { id, title, mainFormulaId, mainFormulaName, syndrome, page }`
+
+- **错误码**：4000（方剂不存在）
+- **请求示例**：`GET /api/biz/formula/f_1/page`
+- **响应示例**
+
+```json
+{ "code": 0, "msg": "success", "data": {
+  "id": "f_1", "name": "麻黄汤", "page": "19-22", "chapter": "第一节 太阳病方证案例",
+  "nodeId": "n_g1", "nodeTitle": "一、太阳伤寒类方证", "bookId": "bk_1", "classicName": "伤寒论",
+  "herbs": [ {"name":"麻黄","dose":9,"unit":"g","role":"君","seq":1},
+             {"name":"桂枝","dose":6,"unit":"g","role":"臣","seq":2} ],
+  "quotes": [ {"id":"q_1","articleNo":"35","classicName":"伤寒论","content":"太阳病，头痛发热……麻黄汤主之。","label":"《伤寒论》第 35 条"} ],
+  "cases": [ {"id":"cs_1","title":"麻黄汤（加味）","mainFormulaId":"f_1","page":"19"} ],
+  "related": [ {"id":"f_2","name":"葛根汤","efficacy":"发汗解表，升津舒筋"} ] } }
+```
+
+### 14.4 `GET /api/biz/case/{id}/page` —— 医案详情页数据
+
+- **归属**：域1　**负责人**：A　**鉴权**：需要
+- **响应 `data`：`CaseVO`**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `id` / `title` / `unitType` | string | 医案 ID / 标题 / 类型 |
+| `mainFormulaId` / `mainFormulaName` | string | 主方 |
+| `syndrome` | string | 舌脉 / 证候字段（原书 syndrome_text） |
+| `page` / `bookId` / `chapter` | string | 页码 / 语料 / 章节 |
+| `sections` | `{id,kind,content,seq}[]` | 栏目：`案例原文` / `按语`，content 保留换行 |
+| `quotes` | QuoteRefVO[] | 该案主方的相关条文 |
+
+- **错误码**：4000（医案不存在）
+- **说明**：`案例原文` 内含「现病史 / 查体 / 辨证 / 治法 / 处方 / 治疗效果」等段落，前端按标签拆分后做「先思后看」渐进揭示。
+- **响应示例**
+
+```json
+{ "code": 0, "msg": "success", "data": {
+  "id": "cs_1", "title": "麻黄汤（加味）", "unitType": "case", "mainFormulaId": "f_1",
+  "mainFormulaName": "麻黄汤", "page": "19", "chapter": "第一节 太阳病方证案例",
+  "sections": [ { "id":"cssec_1","kind":"案例原文","seq":0,
+                  "content":"徐某,男,23岁……\n现病史：发热恶寒……\n查体：……\n辨证：……\n治法：……\n处方：……" },
+                { "id":"cssec_2","kind":"按语","seq":1,"content":"本案为典型太阳伤寒表实证……" } ],
+  "quotes": [ {"id":"q_1","articleNo":"35","content":"太阳病……麻黄汤主之。","label":"《伤寒论》第 35 条"} ] } }
+```
+
+### 14.5 `GET /api/biz/quote/{id}/page` —— 条文详情页数据
+
+- **归属**：域1　**负责人**：A　**鉴权**：需要
+- **响应 `data`：`QuoteVO`**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `id` | string | classic_quote.id |
+| `articleNo` / `classicId` / `classicName` | string | 单条编号（多数为空，按段落存储） |
+| `content` | string | 原始整段（含多条编号原文） |
+| `plainText` | string | 白话，可空（待 Agent 回填） |
+| `page` / `label` | string | 页码 / 展示标题 |
+| `items` | QuoteItemVO[] | 按「1.xxx(35)」正则拆出的逐条 |
+| `formulas` / `cases` | `{id,name}[]` | 引用本条的方剂 / 医案（反向索引） |
+
+`QuoteItemVO = { no, text, label, formulas:[{id,name}], cases:[{id,name}] }`
+
+- **错误码**：4000（条文不存在）
+- **响应示例**
+
+```json
+{ "code": 0, "msg": "success", "data": {
+  "id": "q_1", "classicName": "伤寒论", "page": null, "label": "《伤寒论》",
+  "items": [ { "no":"1","text":"太阳之为病，脉浮，头项强痛而恶寒。","label":"第 1 条",
+               "formulas":[],"cases":[] },
+             { "no":"35","text":"太阳病，头痛发热……麻黄汤主之。","label":"第 35 条",
+               "formulas":[{"id":"f_1","name":"麻黄汤"}],"cases":[{"id":"cs_1","name":"麻黄汤（加味）"}] } ],
+  "formulas": [ {"id":"f_1","name":"麻黄汤"} ],
+  "cases": [ {"id":"cs_1","name":"麻黄汤（加味）"} ] } }
+```
+
+### 14.6 `GET /api/biz/search` · `POST /api/biz/search/semantic` —— 检索（混合召回）
+
+- **归属**：域1　**负责人**：A　**鉴权**：需要
+- **请求参数（GET）**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|---|---|---|---|---|
+| `q` | string | 是 | 关键词 / 自然语言 | `"无汗而喘、脉浮紧用什么方"` |
+| `type` | enum(all,formula,case,quote) | 否 | 类型过滤 | `"formula"` |
+| `bookId` | string | 否 | 语料过滤 | `"bk_1"` |
+| `herb` | string | 否 | 药味过滤（如「麻黄」） | `"麻黄"` |
+| `page` / `size` | number | 否 | 默认 1 / 10，size ≤ 50 | `1` / `10` |
+
+- **请求体（POST）**：`{ "q": "...", "type": "formula", "bookId": "bk_1", "herb": "麻黄", "page": 1, "size": 10 }`
+- **响应 `data`：`SearchResultVO`**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `list` | SearchHitVO[] | 命中列表 |
+| `total` / `page` / `size` | number | 分页 |
+| `mode` | enum(hybrid,fulltext,fuzzy,browse) | 实际生效的召回模式 |
+| `tookMs` | number | 耗时 |
+| `facets` | `{types,classics,books}` | 分面计数（`Record<string,number>`） |
+
+`SearchHitVO = { id, refType:enum(formula,case,quote), refId, title, snippet, score:0~1, bookId, bookTitle, classic, chapter, section, page, herbs:string[], matchedBy:enum(vector,fulltext,fuzzy,quote)[], meta }`
+
+> `title` / `section` 均为「展示用」字段：`title` 对医案回查 `case_record.title`（`content_unit.title` 存的是书名），
+> `section` 取自 `meta_jsonb.section`（比 `chapter` 细一级）。`quote-index` 覆盖全部 568 行条文：
+> 有「1.xxx(35)」编号的按条拆，无编号的整段作为一条。
+
+- **召回策略**：向量（pgvector，需配置 `herbmind.embedding.url`）+ 全文（pg_jieba） + 中文词项（2-gram / 整词 ILIKE） + 条文（正则拆条），四条腿 RRF 融合；任一腿不可用只降级、不报错。
+- **错误码**：4000（参数错误）/ 5000
+- **响应示例**
+
+```json
+{ "code": 0, "msg": "success", "data": {
+  "list": [ { "id":"cu_1","refType":"formula","refId":"f_1","title":"麻黄汤",
+              "snippet":"方剂：麻黄汤 组成：麻黄、桂枝、杏仁、炙甘草……","score":0.98,
+              "bookId":"bk_1","bookTitle":"伤寒论","classic":"伤寒论","page":"第19-22页",
+              "herbs":["麻黄","桂枝","杏仁","炙甘草"],"matchedBy":["fuzzy","fulltext"] } ],
+  "total": 16, "page": 1, "size": 10, "mode": "fulltext", "tookMs": 38,
+  "facets": { "types": {"formula":3,"case":8,"quote":5}, "classics": {"伤寒论":16}, "books": {"伤寒论":16} } } }
+```
+
+### 14.7 `GET /api/biz/search/quote-index` —— 条文反向索引
+
+- **归属**：域1　**负责人**：A　**鉴权**：需要
+- **请求参数**：`q`（可空 = 全量浏览）、`bookId`、`page`(1)、`size`(20)
+- **响应 `data`：`QuoteIndexResultVO`**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `list` | `{quoteId,classicName,articleNo,text,page,formulas:[{id,name}],cases:[{id,name}]}[]` | 逐条原文 + 引用方/案 |
+| `total` / `page` / `size` | number | 分页 |
+
+- **错误码**：5000
+- **响应示例**
+
+```json
+{ "code": 0, "msg": "success", "data": {
+  "list": [ { "quoteId":"q_1","classicName":"伤寒论","articleNo":"35",
+              "text":"太阳病，头痛发热，身疼腰痛，骨节疼痛，恶风，无汗而喘者，麻黄汤主之。",
+              "formulas":[{"id":"f_1","name":"麻黄汤"}], "cases":[{"id":"cs_1","name":"麻黄汤（加味）"}] } ],
+  "total": 1520, "page": 1, "size": 20 } }
+```
+
+### 14.8 `GET /api/biz/home` —— 首页聚合
+
+- **归属**：域1　**负责人**：A（BFF `bff/catalog` 包）　**鉴权**：需要
+- **响应 `data`：`HomeVO`**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `stats` | `{books,nodes,formulas,cases,quotes,vectors}` | 全库统计 |
+| `books` | BookVO[] | 书架 |
+| `today` | FormulaVO | 今日方证（按日期确定性选取） |
+| `graph` | `{nodes:[{id,type,name,level}],edges:[{source,target,rel}],formulaId}` | 图谱预览（内容域轻量版） |
+| `graphSource` | string | 当前为 `"catalog-preview"`；svc-graph 就绪后可切 |
+| `hotKeywords` | string[] | 热门检索词 |
+| `degraded` | string[] | 本次降级的分区（如 `["stats"]`） |
+
+- **错误码**：即使部分 svc 不可用也返回 200（`degraded` 标注），全部不可用才 5000
+- **响应示例**
+
+```json
+{ "code": 0, "msg": "success", "data": {
+  "stats": { "books":3,"nodes":70,"formulas":245,"cases":290,"quotes":568,"vectors":535 },
+  "today": { "id":"f_1","name":"麻黄汤","herbs":[] },
+  "graph": { "nodes":[{"id":"f:f_1","type":"Formula","name":"麻黄汤","level":0}],
+             "edges":[{"source":"f:f_1","target":"h:麻黄","rel":"COMPOSED_OF"}],"formulaId":"f_1" },
+  "graphSource": "catalog-preview",
+  "hotKeywords": ["无汗而喘","太阳中风","项背强几几"],
+  "degraded": [] } }
+```
+
+### 14.9 其余新增 / 补全端点（简表）
+
+| 方法 | 路径 | 说明 | 归属 |
+|---|---|---|---|
+| POST | `/api/biz/catalog/import` | 导入语料（UGC）→ 落 `book` + `ingest_status=draft`，返回 `{importId,status,message}` | A |
+| GET | `/api/biz/catalog/import/{id}` | 导入状态（解析/向量化由 ETL 回写） | A |
+| GET | `/api/biz/search/facets?q=` | 仅要分面时使用，返回 `{types,classics,books}` | A |
+| GET | `/api/biz/insight/herbs?limit=` | 用药频次 Top-N：`[{herb,count,formulaCount,ratio}]` | A |
+| GET | `/api/biz/insight/syndrome?limit=` | 证候分布（按目录「类方证」节点） | A |
+| GET | `/api/biz/insight/trend` | 经典 / 章节分布 + 总量 | A |
+| GET | `/api/biz/insight/export?format=csv\|json&kind=herbs\|formulas\|quotes\|units` | 直接回文件流（`Content-Disposition`） | A |
+| POST | `/api/biz/insight/research-pack` | 可复现研究包（seed + 数据指纹 + 内联表） | A |
+| GET | `/internal/catalog/daily` | 今日方证（供 BFF 首页） | A |
+| GET | `/internal/catalog/graph-preview` | 图谱预览 | A |
+| GET | `/internal/catalog/stats` | 全库统计 | A |
+| POST | `/internal/catalog/batch` | 按 id / 名称批量取方剂摘要（**供域2 练习题面**） | A |
+| GET | `/internal/catalog/formula/{id}/related` | 关联方剂（09 §4 已列出） | A |
+| GET | `/internal/catalog/quote/list` | **条文列表（17 号手册 A1）**：`q` / `bookId` / `classicId` + 分页 → `{list,total,page,size}` | A |
+| POST | `/internal/search/recall` | 向量 + 全文混合召回（**供 Agent**） | A |
+| GET | `/internal/insight/herb-stats` | 用药统计（**供 Agent**） | A |
+
+> `content_unit` 的 `embedding` 由 ETL 一次性写入；`svc-search` 只对**查询**调用 embedding（`HERBMIND_EMBEDDING_URL`），未配置即自动降级为全文/词项召回。

@@ -1,0 +1,17 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: svc-insight
+  datasource:
+    url: jdbc:postgresql://localhost:5432/herbmind
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jackson:
+    default-property-inclusion: non_null
+
+logging:
+  level:
+    com.herbmind: info

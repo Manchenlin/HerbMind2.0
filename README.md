@@ -29,8 +29,8 @@ bash scripts/init-data.sh /c/Users/你/Desktop/herbmind_data.sql
 #    cd database/etl && pip install -r requirements.txt && python migrate_legacy.py && python build_graph.py
 
 # 3) 起服务（IDEA 打开 backend/pom.xml，或 bash scripts/run-dev.sh）
-#    svc-catalog :8082 → herbmind-bff :8090 → herbmind-gateway :8080
-#    前端：cd frontend && npm i && npm run dev  →  http://localhost:5173/library
+#    svc-catalog :8082 → svc-search :8083 → svc-insight :8086 → herbmind-bff :8090 → herbmind-gateway :8080
+#    前端：cd frontend && npm i && npm run dev  →  http://localhost:5173/
 ```
 
 > **数据不重复消耗**：535 条向量已随快照分发，**任何人都不需要重新调用 Embedding API**。
@@ -56,16 +56,21 @@ HerbMind/
 ├── backend/            Java 微服务（Maven 多模块）
 │   ├── herbmind-common      R<T> / PageResult / 全局异常
 │   ├── herbmind-contract    契约 DTO + Feign 接口
-│   ├── svc-catalog          样例服务：/internal/catalog/**
+│   ├── svc-catalog          内容域：/internal/catalog/**（书架/目录/方剂/医案/条文/导入）
+│   ├── svc-search           检索域：/internal/search/**（向量+全文+词项+条文 混合召回）
+│   ├── svc-insight          科研统计：/internal/insight/**（用药/证候/分布/导出/研究包）
 │   ├── herbmind-bff         前端唯一业务入口：/api/biz/**
 │   └── herbmind-gateway     网关：/api/biz/** → BFF
+├── agent/              Python Agent 服务（域3）
 ├── frontend/           Vue 3 + TS + Vite（视觉基线 = prototype/theme.css）
 ├── database/
 │   ├── pg/             DDL 00→04（initdb 自动执行）
 │   └── etl/            迁移 / 种子 / 建图脚本（Python）
 ├── docker/             docker-compose.infra.yml（中间件）
-└── scripts/            smoke.py 端到端冒烟
+└── scripts/            run-dev.sh 起后端 / verify-a.sh 域1验收 / bootstrap-offline.sh 离线一键起 / smoke.py 数据冒烟
 ```
+
+> 域1 的实现与验收细节见 [`docs/A_内容域_交付说明.md`](docs/A_内容域_交付说明.md)。
 
 ## 关键约定（详见 `../project_plan/15_团队分工与接口协作.md` 与 `09_API契约清单.md`）
 
@@ -96,7 +101,9 @@ HerbMind/
 
 ```
 中间件(PG/Neo4j/Redis/Nacos) → 建表(自动) → 种子(seed_books → import_formula) → 建图(build_graph)
-                              → svc-catalog:8082 → bff:8090 → gateway:8080
-                              → 验证：curl localhost:8090/api/biz/library/tree?bookId=sh
-                              → 冒烟：python scripts/smoke.py
+                              → svc-catalog:8082 → svc-search:8083 → svc-insight:8086
+                              → bff:8090 → gateway:8080
+                              → 验证：curl localhost:8090/api/biz/home
+                              → 域1验收：bash scripts/verify-a.sh
+                              → 数据冒烟：python scripts/smoke.py
 ```
