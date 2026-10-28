@@ -17,6 +17,8 @@
     <module>svc-search</module>
     <module>svc-insight</module>
     <module>svc-graph</module>
+    <module>svc-identity</module>
+    <module>svc-training</module>
     <module>herbmind-bff</module>
     <module>herbmind-gateway</module>
   </modules>

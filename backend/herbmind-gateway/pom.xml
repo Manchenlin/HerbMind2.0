@@ -12,11 +12,34 @@
   <artifactId>herbmind-gateway</artifactId>
   <name>HerbMind Gateway</name>
 
+  <properties>
+    <jjwt.version>0.12.6</jjwt.version>
+  </properties>
+
   <dependencies>
     <!-- 网关是 WebFlux；不要引入 spring-boot-starter-web -->
     <dependency>
       <groupId>org.springframework.cloud</groupId>
       <artifactId>spring-cloud-starter-gateway</artifactId>
+    </dependency>
+
+    <!-- 统一鉴权：网关自己校验 JWT，再把 userId 注成 X-User-Id 传给下游 -->
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-api</artifactId>
+      <version>${jjwt.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-impl</artifactId>
+      <version>${jjwt.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-jackson</artifactId>
+      <version>${jjwt.version}</version>
+      <scope>runtime</scope>
     </dependency>
   </dependencies>
 

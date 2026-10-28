@@ -21,3 +21,8 @@ spring:
 logging:
   level:
     org.springframework.cloud.gateway: info
+
+herbmind:
+  jwt:
+    # 必须与 svc-identity 的 herbmind.jwt.secret 完全一致（同一把钥匙签发/校验）
+    secret: herbmind-dev-jwt-secret-please-change-before-prod-0123456789

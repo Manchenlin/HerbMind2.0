@@ -16,6 +16,10 @@ spring:
 
 # 本地开发：静态直连 svc（免 Nacos）。集成日改为服务名发现即可。
 herbmind:
+  # 域2（身份 / 成长）
+  svc-identity-url: http://localhost:8081
+  svc-training-url: http://localhost:8084
+  # 域1（内容）
   svc-catalog-url: http://localhost:8082
   svc-search-url: http://localhost:8083
   svc-insight-url: http://localhost:8086
