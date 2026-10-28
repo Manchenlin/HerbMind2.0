@@ -41,7 +41,7 @@
               :key="c.id"
               class="rowitem"
               style="padding:8px 10px;margin-top:6px;cursor:pointer"
-              @click="selected = c"
+              @click="openNode(c)"
             >{{ c.title }}</div>
           </details>
         </details>
@@ -59,22 +59,25 @@
         <p class="muted" style="margin-bottom:16px">
           {{ selected ? `该节点下共 ${selected.children.length} 个子单元。` : '请在左侧目录中选择一个节点。' }}
         </p>
+        <div v-if="selected" style="margin-bottom:14px">
+          <RouterLink class="btn primary sm" :to="`/node/${selected.id}`">打开节点详情 →</RouterLink>
+        </div>
 
         <div v-if="selected && selected.children.length" class="grid cols-2 stagger">
           <a
             v-for="c in selected.children"
             :key="c.id"
             class="rowitem"
-            @click="selected = c"
+            @click="openNode(c)"
           >
             <span class="thumb">{{ c.title.slice(0, 1) }}</span>
             <div>
               <b>{{ c.title }}</b>
-              <div class="muted">{{ c.nodeType }}</div>
+              <div class="muted">{{ nodeTypeLabel(c.nodeType) }}</div>
             </div>
           </a>
         </div>
-        <p v-else class="muted">（叶子节点，后续接入方剂/案例详情）</p>
+        <p v-else class="muted">（叶子节点：进入节点详情页查看其下方剂 / 医案 / 条文）</p>
       </div>
     </section>
   </div>
@@ -84,6 +87,10 @@
 import { computed, onMounted, ref } from 'vue'
 import { getLibraryTree, type BookTreeNode } from '@/api/catalog'
 import { toast } from '@/utils/toast'
+import { useRoute, useRouter } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
 
 const bookTabs = [
   { id: 'bk_1', label: '伤寒论', disabled: false },
@@ -91,7 +98,7 @@ const bookTabs = [
   { id: 'bk_3', label: '金匮要略', disabled: false }
 ]
 
-const bookId = ref('bk_1')
+const bookId = ref(String(route.query.bookId ?? 'bk_1'))
 const tree = ref<BookTreeNode[]>([])
 const selected = ref<BookTreeNode | null>(null)
 const loading = ref(false)
@@ -100,6 +107,21 @@ const error = ref('')
 const curBookTitle = computed(
   () => bookTabs.find((b) => b.id === bookId.value)?.label ?? bookId.value
 )
+
+const NODE_TYPE_LABEL: Record<string, string> = {
+  chapter: '章',
+  section: '节',
+  category: '类方证',
+  unit: '单元'
+}
+
+function nodeTypeLabel(t: string) {
+  return NODE_TYPE_LABEL[t] ?? t
+}
+
+function openNode(n: BookTreeNode) {
+  router.push(`/node/${n.id}`)
+}
 
 async function load() {
   loading.value = true

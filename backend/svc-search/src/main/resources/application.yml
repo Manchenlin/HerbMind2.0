@@ -1,0 +1,30 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: svc-search
+  datasource:
+    url: jdbc:postgresql://localhost:5432/herbmind
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+# 语义检索的查询向量（bge-m3，1024 维）。
+# 不配 / 调不通时自动降级为「词项 + 全文」召回，接口不报错（mode 会是 fulltext / fuzzy）。
+herbmind:
+  embedding:
+    url: ${HERBMIND_EMBEDDING_URL:}
+    api-key: ${HERBMIND_EMBEDDING_KEY:}
+    model: ${HERBMIND_EMBEDDING_MODEL:BAAI/bge-m3}
+    dimension: 1024
+    connect-timeout-ms: 800
+    read-timeout-ms: 2500   # 云端 embedding 慢时不拖垮检索
+
+logging:
+  level:
+    com.herbmind: info

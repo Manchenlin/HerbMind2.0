@@ -2,23 +2,10 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 /**
  * 完整页面清单（对齐 03 信息架构）。
- * 未实现的页面统一走 ComingSoonView —— 它会告诉你**负责人 + 要照哪个原型文件做**，
- * 这样三个人做出来的页面不会跑偏。
+ * 域1（内容域）、域3（智能域）已实现；域2 未实现的页面统一走 ComingSoonView ——
+ * 它会告诉你**负责人 + 要照哪个原型文件做**，这样三个人做出来的页面不会跑偏。
  */
 const PAGES: Array<{ path: string; title: string; owner: string; proto: string }> = [
-  // ---- 域1 内容域（读）----
-  { path: '/', title: '首页', owner: '域1', proto: 'index.html' },
-  { path: '/shelf', title: '书架 · 语料库', owner: '域1', proto: 'shelf.html' },
-  { path: '/shelf/import', title: '导入语料', owner: '域1', proto: 'import.html' },
-  { path: '/node/:id', title: '目录节点', owner: '域1', proto: 'library.html' },
-  { path: '/formula/:id', title: '方剂详情', owner: '域1', proto: 'formula.html' },
-  { path: '/case/:id', title: '案例详情', owner: '域1', proto: 'case.html' },
-  { path: '/quote/:id', title: '条文详情', owner: '域1', proto: 'quote.html' },
-  { path: '/search', title: '检索工作台', owner: '域1', proto: 'search.html' },
-  { path: '/search/result', title: '结果分面', owner: '域1', proto: 'search-result.html' },
-  { path: '/search/quote-index', title: '条文反向索引', owner: '域1', proto: 'search-result.html' },
-  { path: '/research', title: '科研工作台', owner: '域1', proto: 'graph-map.html' },
-  { path: '/research/export', title: '数据导出', owner: '域1', proto: 'graph-map.html' },
   // ---- 域2 成长域（练）----
   { path: '/train', title: '练习台', owner: '域2', proto: 'train.html' },
   { path: '/train/session/:id', title: '答题面板', owner: '域2', proto: 'answer.html' },
@@ -37,13 +24,86 @@ const PAGES: Array<{ path: string; title: string; owner: string; proto: string }
 ]
 
 const routes: RouteRecordRaw[] = [
-  // ---- 已实现 ----
+  // ================= 域1 内容域（已实现） =================
+  {
+    path: '/',
+    name: 'home',
+    component: () => import('@/views/HomeView.vue'),
+    meta: { title: '首页', owner: '域1', proto: 'index.html' }
+  },
+  {
+    path: '/shelf',
+    name: 'shelf',
+    component: () => import('@/views/ShelfView.vue'),
+    meta: { title: '书架 · 语料库', owner: '域1', proto: 'shelf.html' }
+  },
+  {
+    path: '/shelf/import',
+    name: 'import',
+    component: () => import('@/views/ImportView.vue'),
+    meta: { title: '导入语料', owner: '域1', proto: 'import.html' }
+  },
   {
     path: '/library',
     name: 'library',
     component: () => import('@/views/LibraryView.vue'),
     meta: { title: '典籍浏览', owner: '域1', proto: 'library.html' }
   },
+  {
+    path: '/node/:id',
+    name: 'node',
+    component: () => import('@/views/NodeView.vue'),
+    meta: { title: '目录节点', owner: '域1', proto: 'library.html' }
+  },
+  {
+    path: '/formula/:id',
+    name: 'formula',
+    component: () => import('@/views/FormulaView.vue'),
+    meta: { title: '方剂详情', owner: '域1', proto: 'formula.html' }
+  },
+  {
+    path: '/case/:id',
+    name: 'case',
+    component: () => import('@/views/CaseView.vue'),
+    meta: { title: '案例详情', owner: '域1', proto: 'case.html' }
+  },
+  {
+    path: '/quote/:id',
+    name: 'quote',
+    component: () => import('@/views/QuoteView.vue'),
+    meta: { title: '条文详情', owner: '域1', proto: 'quote.html' }
+  },
+  {
+    path: '/search',
+    name: 'search',
+    component: () => import('@/views/SearchView.vue'),
+    meta: { title: '检索工作台', owner: '域1', proto: 'search.html' }
+  },
+  {
+    path: '/search/result',
+    name: 'search-result',
+    component: () => import('@/views/SearchResultView.vue'),
+    meta: { title: '结果分面', owner: '域1', proto: 'search-result.html' }
+  },
+  {
+    path: '/search/quote-index',
+    name: 'quote-index',
+    component: () => import('@/views/QuoteIndexView.vue'),
+    meta: { title: '条文反向索引', owner: '域1', proto: 'search-result.html' }
+  },
+  {
+    path: '/research',
+    name: 'research',
+    component: () => import('@/views/ResearchView.vue'),
+    meta: { title: '科研工作台', owner: '域1', proto: 'graph-map.html' }
+  },
+  {
+    path: '/research/export',
+    name: 'research-export',
+    component: () => import('@/views/ResearchExportView.vue'),
+    meta: { title: '数据导出', owner: '域1', proto: 'graph-map.html' }
+  },
+  // ================= 登录（域2） =================
   {
     path: '/login',
     name: 'login',
