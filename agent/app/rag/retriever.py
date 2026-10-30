@@ -44,7 +44,7 @@ class RetrievedUnit:
     @property
     def kind_label(self) -> str:
         """给提示词用的中文类型名。"""
-        return {"formula": "方剂", "case": "医案"}.get(self.ref_type, self.ref_type)
+        return {"formula": "方剂", "case": "医案", "quote": "条文"}.get(self.ref_type, self.ref_type)
 
     def snippet(self, limit: int = SNIPPET_LEN) -> str:
         """取正文前若干字做预览（去掉换行，前端好排版）。"""
