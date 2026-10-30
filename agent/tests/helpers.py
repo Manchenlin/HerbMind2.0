@@ -93,3 +93,64 @@ def fake_client(**kwargs: Any) -> TestClient:
     from app.main import app
 
     return TestClient(app, **kwargs)
+
+
+# 集成测试的环境守卫：探一次、结果缓存住。
+# 缓存是必须的 —— 每次调用 init_resources() 都会新建一个连接池并覆盖全局单例，
+# 旧池不会被关掉，多探几次就会在进程里留下一堆没人用的池。
+_PG_STATE: dict[str, str | None] = {"checked": "no", "reason": None}
+
+
+def _ensure_resources() -> None:
+    """确保外部资源已初始化。
+
+    只在"没有池 / 池已关闭"时才 init：`test_formula_diff` 的 teardown 会 close_resources()，
+    后续模块再查库时池是关着的，必须重建；但重复 init 又会漏池，所以要判断。
+    """
+    from app import db
+    from app.config import get_settings
+
+    pool = db._pg_pool
+    if pool is None or getattr(pool, "closed", False):
+        db.init_resources(get_settings())
+
+
+def pg_ready() -> str | None:
+    """PG 是否可用且有数据：返回 None=可用，否则返回人类可读的不可用原因。"""
+    if _PG_STATE["checked"] == "yes":
+        return _PG_STATE["reason"]
+
+    from app.db import get_pg_pool
+
+    reason: str | None = None
+    try:
+        _ensure_resources()
+        with get_pg_pool().connection(timeout=3) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM formula")
+                formulas = cur.fetchone()[0]
+        # 只连通不够：快照没导时同样会一片红，且报错信息毫无指向性
+        if formulas < 200:
+            reason = f"PG 可连但数据缺失（formula 仅 {formulas} 行，应有 245 行）：请先导入快照"
+    except Exception as exc:  # noqa: BLE001
+        reason = (
+            f"PG 不可用（{type(exc).__name__}: {exc}）："
+            "请先 bash scripts/start-infra.sh 并导入快照"
+        )
+
+    _PG_STATE["checked"] = "yes"
+    _PG_STATE["reason"] = reason
+    return reason
+
+
+def neo4j_ready() -> str | None:
+    """Neo4j 是否可用：返回 None=可用，否则返回原因。"""
+    from app.db import get_neo4j_driver
+
+    try:
+        _ensure_resources()
+        with get_neo4j_driver().session() as session:
+            session.run("RETURN 1").consume()
+        return None
+    except Exception as exc:  # noqa: BLE001
+        return f"Neo4j 不可用（{type(exc).__name__}: {exc}）：请先 bash scripts/start-infra.sh"

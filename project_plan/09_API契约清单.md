@@ -663,3 +663,167 @@ data: {"conversationId":"c_1","degraded":false}
 | GET | `/internal/insight/herb-stats` | 用药统计（**供 Agent**） | A |
 
 > `content_unit` 的 `embedding` 由 ETL 一次性写入；`svc-search` 只对**查询**调用 embedding（`HERBMIND_EMBEDDING_URL`），未配置即自动降级为全文/词项召回。
+
+---
+
+## 15. 域3 M2 补全 · 图谱 BFF 接口细则（`/api/biz/graph/**`）
+
+> **归属分工**：契约字段由**域3（C）**定义；BFF 端点由**域2（B）** 在 `herbmind-bff` 的 `bff/graph` 包内实现；后端数据由域3 的 `svc-graph`（`/internal/graph/**`）提供。
+> 本节字段是**冻结口径**，改动需三人 review（`15_团队分工与接口协作.md` §44-50）。
+>
+> **图数据现状（`[实核 2026-10-28]`）**：只有 `Formula{id,name,syndrome,page}` 与 `Herb{name}` 两类节点、
+> `COMPOSED_OF{dose,unit,role}` 一类边；**没有 Syndrome / Symptom / Quote 节点**（`syndrome`、`symptom` 两表各 0 行）。
+> 因此下列接口一律**只接受 `Formula` / `Herb` 两种标签**，收到别的标签返回 4000，不做"猜你想查什么"。
+>
+> ⚠️ **ID 口径（硬约定）**：对外一律用**稳定业务 ID** —— 方剂 `f_1`、药味 `h_麻黄`（`h:` + 药名）。
+> **禁止直接暴露 Neo4j 的 `elementId`**：重建库或重启后它会变，前端收藏、URL 分享、缓存都会失效。
+> 当前 `svc-graph` 返回的是 `elementId`，属域3 待改项。
+>
+> **错误码**：`4000` 参数错误（标签不支持、跳数越界）、`4040` 实体不存在（与 §12 的 404 类对应）、`5000` 图服务不可用。
+> 注意：**"查得到实体但没有邻居"不是错误**，返回 `nodes: []` + `truncated: false`。
+
+公共对象（下文各接口复用）：
+
+```text
+GraphNodeVO = { id:string, label:enum(Formula|Herb), name:string, props:object }
+    ├ Formula.props = { syndrome?:string, page?:string }
+    └ Herb.props    = { }
+GraphEdgeVO = { source:string, target:string, rel:"COMPOSED_OF", props:{ dose?:string, unit?:string, role?:string } }
+```
+
+### 15.1 `GET /api/biz/graph/neighbors` —— 单实体邻居（图谱探索页）
+
+- **归属**：域3 定义 / 域2 实现 BFF　**数据源**：`svc-graph` `GET /internal/graph/neighbors`　**鉴权**：需要
+- **查询参数**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|---|---|---|---|---|
+| `entity` | string | 是 | 实体名或业务 ID | `麻黄汤` / `f_1` |
+| `label` | enum(Formula,Herb) | 否 | 默认 `Formula`；也接受中文「方剂」「药味」 | `Formula` |
+| `hops` | number | 否 | 跳数 1~3，默认 1；1 跳=直接邻居（方的药味 / 含该药的方） | `1` |
+| `limit` | number | 否 | 邻居上限，默认 50，最大 200 | `50` |
+
+- **响应 `data`：`NeighborsVO`**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `center` | GraphNodeVO | 中心节点 |
+| `nodes` | GraphNodeVO[] | 邻居节点（不含 center，按 label 再按 name 升序） |
+| `edges` | GraphEdgeVO[] | 邻居与 center 之间的边 |
+| `truncated` | boolean | 是否因 `limit` 截断（true 时前端提示"仅显示前 N 个"） |
+
+- **错误码**：4000（entity 为空 / label 不支持 / hops>3）/ 4040（实体不存在）
+- **响应示例**
+
+```json
+{ "code": 0, "msg": "success", "data": {
+  "center": { "id": "f_1", "label": "Formula", "name": "麻黄汤", "props": { "page": "第19-22页" } },
+  "nodes": [ { "id": "h_麻黄", "label": "Herb", "name": "麻黄", "props": {} },
+             { "id": "h_桂枝", "label": "Herb", "name": "桂枝", "props": {} } ],
+  "edges": [ { "source": "f_1", "target": "h_麻黄", "rel": "COMPOSED_OF", "props": {} },
+             { "source": "f_1", "target": "h_桂枝", "rel": "COMPOSED_OF", "props": {} } ],
+  "truncated": false } }
+```
+
+### 15.2 `GET /api/biz/graph/subgraph` —— 子图（多起点 / 类型筛选，供相似度地图与批量渲染）
+
+- **归属**：域3 定义 / 域2 实现 BFF　**数据源**：`svc-graph` `GET /internal/graph/subgraph`（待实现）　**鉴权**：需要
+- **与 15.1 的差别**：`neighbors` 只从**一个**实体出发、只要一层关系；`subgraph` 支持多个起点、按节点类型筛选、返回整张子图（节点+边全量），供前端一次性渲染。
+- **查询参数**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|---|---|---|---|---|
+| `entity` | string | 否 | 起点实体，逗号分隔最多 5 个；**不传 = 全图（受 `limit` 限制）** | `麻黄汤,桂枝汤` |
+| `label` | enum(Formula,Herb) | 否 | 起点标签，默认 `Formula` | `Formula` |
+| `hops` | number | 否 | 1~3，默认 2 | `2` |
+| `types` | string | 否 | 只要这些节点类型，逗号分隔，默认两者都要 | `Formula,Herb` |
+| `limit` | number | 否 | 节点上限，默认 200，最大 500 | `200` |
+
+- **响应 `data`：`SubgraphVO`**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `nodes` | GraphNodeVO[] | 子图节点 |
+| `edges` | GraphEdgeVO[] | 子图边（两端都必须出现在 `nodes` 里） |
+| `stats` | `{nodeCount,edgeCount}` | 规模，便于前端决定是否开启力导向布局 |
+| `truncated` | boolean | 是否截断 |
+
+- **错误码**：4000 / 4040（`entity` 全部不存在时）
+- **性能约束**：`hops=3` + `limit=500` 时服务端响应应 ≤ 1s（当前图 245 方 / 376 药 / 1288 边，属小图）
+
+### 15.3 `GET /api/biz/graph/formula/{id}` —— 方心子图（方剂详情页 / 图谱页中心块）
+
+- **归属**：域3 定义 / 域2 实现 BFF　**数据源**：`svc-graph` `GET /internal/graph/formula/{id}`（待实现），药味顺序与关联方取 PG（`formula_herb`）　**鉴权**：需要
+- **路径参数**：`id` = 方剂 ID（`f_1`）
+- **响应 `data`：`FormulaGraphVO`**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `center` | `{id,name,alias,syndromeText,page}` | 中心方剂（`syndromeText` 为语料原文摘录） |
+| `herbs` | `{id,name,seq,dose,unit,role}[]` | 药味，`seq` 为库内顺序；`dose/unit/role` 多数为空（库内仅 69/1315 有剂量） |
+| `herbsIncomplete` | boolean | true = 该方在库内药味缺失或含疑似解析残留（脏药名），前端需提示 |
+| `relatedFormulas` | `{id,name,sharedHerbs:string[],jaccard:number}[]` | 与该方药味交集最大的成方，**按 Jaccard 降序、最多 5 条** |
+| `notice` | string | 免责声明（不推断功效、不给处方建议） |
+
+- **红线约束**：`relatedFormulas` 只能用**药味集合 Jaccard** 计算（规则，非模型推断）；每条必须能被前端标注为「组成相近 ≠ 同一方」
+- **错误码**：4040（方剂不存在）
+- **响应示例**
+
+```json
+{ "code": 0, "msg": "success", "data": {
+  "center": { "id":"f_1", "name":"麻黄汤", "alias":"", "syndromeText":"恶风寒、发热，头身疼痛……脉浮紧", "page":"第19-22页" },
+  "herbs": [ { "id":"h_麻黄","name":"麻黄","seq":1,"dose":null,"unit":null,"role":null },
+             { "id":"h_桂枝","name":"桂枝","seq":2,"dose":null,"unit":null,"role":null } ],
+  "herbsIncomplete": false,
+  "relatedFormulas": [ { "id":"f_2","name":"葛根汤","sharedHerbs":["麻黄","桂枝","甘草"],"jaccard":0.625 } ],
+  "notice": "仅比对药味组成，不比对剂量与配伍关系；「组成相同」不等于「是同一方」，不构成处方建议。" } }
+```
+
+### 15.4 `GET /api/biz/graph/path` —— 两实体之间的路径
+
+- **归属**：域3 定义 / 域2 实现 BFF　**数据源**：`svc-graph` `GET /internal/graph/path`（待实现）　**鉴权**：需要
+- **查询参数**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|---|---|---|---|---|
+| `from` | string | 是 | 起点（名称或业务 ID） | `f_1` |
+| `to` | string | 是 | 终点 | `f_22` |
+| `maxHops` | number | 否 | 1~4，默认 3 | `3` |
+| `limit` | number | 否 | 最多返回几条路径，默认 3，最大 5 | `3` |
+
+- **响应 `data`：`PathVO`**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `found` | boolean | 是否找到路径；**false 不是错误**，前端显示"两实体之间最多 N 跳内无关联" |
+| `paths` | `{nodes:GraphNodeVO[],edges:GraphEdgeVO[],length:number}[]` | 路径按 `length` 升序 |
+| `explanation` | string | 人类可读说明，如「经共享药味「桂枝」相连，2 跳」 |
+
+- **错误码**：4000（起点/终点缺失或相同）/ 4040（任一实体不存在）
+- **实现约束**：Cypher 必须带 `LIMIT` 与跳数上限，禁止无界 `[*]` 查询
+
+### 15.5 `GET /api/biz/graph/map` —— 相似度地图坐标（相似度地图页）
+
+- **归属**：域3 定义 / 域2 实现 BFF　**数据源**：`svc-graph` `GET /internal/graph/map`（待实现）　**鉴权**：需要
+- **查询参数**：`metric`（enum(composition)，默认 `composition`）、`limit`（点数，默认 200，最大 500）、`nodeId`（可选，限定某目录节点下的方剂）
+- **响应 `data`：`GraphMapVO`**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `metric` | enum(composition) | 距离口径，一期**只允许药味 Jaccard**（不提供"功效相似"这类推断口径） |
+| `points` | `{id,label,name,x:number,y:number,cluster:string}[]` | `x/y` 已归一化到 0~1 |
+| `version` | string | 计算版本（`metric + 数据指纹`），同版本必须可复现同一张图 |
+| `truncated` | boolean | 是否截断 |
+
+- **实现约束**：坐标由**服务端确定性计算**（同一 `version` 反复请求结果必须一致），前端只画点、不自行布局；否则每次刷新图形乱跳，无法用于讲解与截图
+
+### 15.6 落地顺序（谁先做）
+
+| 步骤 | 内容 | 负责 | 前置 |
+|---|---|---|---|
+| 1 | `svc-graph` 补 `/subgraph`、`/formula/{id}`、`/path`、`/map`，并把节点 `id` 从 `elementId` 换成 `f_*` / `h_*` | 域3（C） | 本契约冻结 |
+| 2 | `herbmind-contract` 加 `GraphClient`（Feign，`url=${herbmind.svc-graph-url}`），BFF 加 `bff/graph` 包与 4 个端点 | 域2（B） | 步骤 1 的 `/internal` 签名 |
+| 3 | 前端图谱 3 页接 `/api/biz/graph/**` | 域3（C） | 步骤 2 |
+| 4 | `09` 变更记录补一行 | 三人 review | — |
+
+> `contract` 与 BFF 均为**横切代码**，改动需三人 review（`15` §47-50）；`svc-graph` 属域3。
