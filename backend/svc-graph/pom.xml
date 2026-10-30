@@ -29,6 +29,16 @@
       <artifactId>neo4j-java-driver</artifactId>
       <version>5.26.0</version>
     </dependency>
+    <!-- PG 只读源：药味顺序 seq 与 Jaccard 在服务端算（09 契约 §15.3/§15.5），BFF 不用聚合 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-jdbc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
@@ -41,6 +51,13 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <!-- 父 POM 未固定 surefire 版本，Maven 默认的 2.12.4 不认 JUnit 5（会显示 Tests run: 0）。
+           只在本模块覆盖版本，不动父 POM（那是横切文件，改要三人 review）。 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
       </plugin>
     </plugins>
   </build>

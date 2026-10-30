@@ -5,14 +5,25 @@ spring:
   application:
     name: svc-graph
   jackson:
-    default-property-inclusion: non_null   # props 为空时不输出 null 字段
+    default-property-inclusion: non_null   # props / 可选字段无值时不输出
+    serialization:
+      write-dates-as-timestamps: false
 
-# Neo4j 连接：默认值与 docker-compose.infra.yml 的 NEO4J_AUTH 一致
+# Neo4j 连接：默认值与 docker/docker-compose.infra.yml 的 NEO4J_AUTH 一致
 # 生产/他人机器请用环境变量覆盖，不要把真实密码写进仓库
 neo4j:
   uri: ${NEO4J_URI:bolt://localhost:7687}
   username: ${NEO4J_USER:neo4j}
   password: ${NEO4J_PASSWORD:herbmind123}
+
+# PG 只读连接：只用于 formula / formula_herb / book_node（药味顺序 seq 与 Jaccard 在服务端算）
+# 刻意不用 spring.datasource.*：本服务的 PG 是只读辅助源，见 config/PgConfig 注释
+herbmind:
+  pg:
+    url: ${PG_URL:jdbc:postgresql://localhost:5432/herbmind}
+    username: ${PG_USER:postgres}
+    password: ${PG_PASSWORD:postgres}
+    max-pool-size: 4
 
 logging:
   level:
