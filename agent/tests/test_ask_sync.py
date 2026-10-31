@@ -9,8 +9,12 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from helpers import make_unit
 
+from app.agent.runner import ToolTrace
+from app.repo.conversation import anon_scope
 from app.routers import ask as ask_router
 
 HEADERS = {"X-User-Id": "u_test"}
@@ -74,7 +78,16 @@ def test_hit_returns_citations_and_clamps_illegal_tags(client, monkeypatch) -> N
         "totalTokens",
         "retrieveMs",
         "llmMs",
+        "toolsMs",
     }
+    # 工具被关掉时（conftest 默认关）工具轨迹必须是空数组，耗时 0
+    assert data["toolCalls"] == []
+    assert data["usage"]["toolsMs"] == 0
+    # 续接会话靠这个字段：同步端点也必须回传 conversationId
+    assert data["conversationId"]
+    # 新会话 ID 必须带 user 指纹（`c_<scope>_<rand>`）：登录上线前会话匿名落库，
+    # 没有指纹的话 history 会把全库匿名会话都返回给同一个人
+    assert data["conversationId"].startswith(f"c_{anon_scope(HEADERS['X-User-Id'])}_")
 
 
 def test_usage_total_falls_back_to_sum(client, monkeypatch) -> None:
@@ -158,3 +171,57 @@ def test_llm_failure_degrades_to_material_summary(client, monkeypatch) -> None:
     assert "大模型服务暂时不可用" in data["answer"]
     assert len(data["citations"]) == 2
     assert data["usage"]["llmMs"] >= 0
+
+
+# ==================== 限流与落库健壮性 ====================
+
+
+def test_ask_sync_is_rate_limited(client, monkeypatch) -> None:
+    """回归钉子：`/ask` 有滑动窗口限流，`/ask/sync` 成本相同，必须一起挡。
+
+    X-User-Id 是网关信任头、可被伪造，8091 不挡就只能靠网关——多一层防护不吃亏。
+    """
+    _patch_retrieve(monkeypatch, [])  # 无命中分支直接返回，不碰模型
+    ask_router._rate_hits.clear()
+
+    for _ in range(ask_router._RATE_MAX):
+        resp = client.post("/api/agent/ask/sync", json={"question": "问题"}, headers=HEADERS)
+        assert resp.status_code == 200
+
+    resp = client.post("/api/agent/ask/sync", json={"question": "问题"}, headers=HEADERS)
+
+    # HTTPException 被统一成 R 外壳（code/msg），不是 FastAPI 默认的 {"detail": ...}
+    body = resp.json()
+    assert resp.status_code == 429
+    assert body["code"] == 429
+    assert "过于频繁" in body["msg"]
+
+
+def test_persist_keeps_traces_when_assistant_message_fails(monkeypatch) -> None:
+    """回归钉子：assistant 消息落库失败时，工具轨迹仍要以 `message_id=NULL` 写进去。
+
+    否则这一轮"为什么这样回答"的唯一依据（调了哪个工具、命中几条）会整段消失。
+    """
+    recorded: list[tuple[str | None, str]] = []
+
+    async def _ensure(_conv_id, _user_id, _title):
+        return True
+
+    async def _append(_conv_id, role, _content):
+        return "m_user" if role == "user" else None  # 只有 assistant 写失败
+
+    async def _record(message_id, name, _args, _summary, _ms):
+        recorded.append((message_id, name))
+        return True
+
+    monkeypatch.setattr(ask_router, "ensure_conversation", _ensure)
+    monkeypatch.setattr(ask_router, "append_message", _append)
+    monkeypatch.setattr(ask_router, "record_tool_call", _record)
+
+    trace = ToolTrace(
+        name="search_formula", args={"herb": "麻黄"}, ok=True, hit=True, count=3, ms=12
+    )
+
+    asyncio.run(ask_router._persist_ask("c_1", "u_1", "问题", "答案", [trace]))
+
+    assert recorded == [(None, "search_formula")]

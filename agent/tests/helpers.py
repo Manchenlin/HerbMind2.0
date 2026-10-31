@@ -154,3 +154,54 @@ def neo4j_ready() -> str | None:
         return None
     except Exception as exc:  # noqa: BLE001
         return f"Neo4j 不可用（{type(exc).__name__}: {exc}）：请先 bash scripts/start-infra.sh"
+
+
+# ==================== svc 守卫（工具迁移后的集成测试入口） ====================
+# 工具已不再直连 PG/Neo4j，而是打 svc 的 /internal，所以集成测试要探 svc 而不是库。
+# 同样缓存探测结果：每个模块都探一次会白等好几个超时。
+_SVC_STATE: dict[str, str | None] = {}
+
+
+def _svc_probe(name: str, url: str, params: dict[str, Any] | None = None) -> str | None:
+    """探一个 svc 的 /internal 接口：返回 None=可用，否则返回原因。"""
+    if name in _SVC_STATE:
+        return _SVC_STATE[name]
+
+    import httpx
+
+    reason: str | None = None
+    try:
+        with httpx.Client(timeout=2.0) as client:
+            resp = client.get(url, params=params or {})
+        if resp.status_code >= 400:
+            reason = f"{name} 返回 {resp.status_code}：确认 svc 已启动且数据库已导快照"
+    except Exception as exc:  # noqa: BLE001
+        reason = (
+            f"{name} 不可达（{type(exc).__name__}: {exc}）："
+            "请先起后端 svc（mvn spring-boot:run）再跑集成测试"
+        )
+
+    _SVC_STATE[name] = reason
+    return reason
+
+
+def svc_search_ready() -> str | None:
+    """svc-search 是否可用（工具 search_* / semantic_recall 的数据源）。"""
+    from app.clients.base import svc_base_url
+
+    return _svc_probe(
+        "svc-search",
+        f"{svc_base_url('search')}/internal/search",
+        {"q": "麻黄汤", "type": "formula", "size": 1},
+    )
+
+
+def svc_graph_ready() -> str | None:
+    """svc-graph 是否可用（工具 graph_neighbors 的数据源）。"""
+    from app.clients.base import svc_base_url
+
+    return _svc_probe(
+        "svc-graph",
+        f"{svc_base_url('graph')}/internal/graph/neighbors",
+        {"entity": "麻黄汤", "label": "Formula", "hops": 1},
+    )

@@ -95,6 +95,22 @@ class AskUsage(CamelModel):
     total_tokens: int = 0
     retrieve_ms: int = Field(default=0, description="向量检索耗时（含 embedding 调用）")
     llm_ms: int = Field(default=0, description="大模型生成耗时")
+    tools_ms: int = Field(default=0, description="工具取证耗时（含所有轮次；0=没有调用工具）")
+
+
+class ToolCallBrief(CamelModel):
+    """一次工具调用的轨迹（同步问答回传 + 落库摘要同源）。
+
+    `args` 只保留简短标量（字符串截断 40 字），避免把问题原文整段回传。
+    """
+
+    name: str = Field(description="工具名，如 search_formula")
+    args: dict[str, Any] = Field(default_factory=dict, description="模型给工具的参数（已截断）")
+    ok: bool = Field(description="工具是否执行成功；false=服务不可达或参数非法")
+    hit: bool = Field(description="是否查到内容；false=查到了但库里没有")
+    count: int = Field(default=0, description="命中条数")
+    ms: int = Field(default=0, description="本次调用耗时（毫秒）")
+    error: str = Field(default="", description="失败原因（仅 ok=false 时有值）")
 
 
 class AskData(CamelModel):
@@ -106,6 +122,14 @@ class AskData(CamelModel):
     degraded: bool = Field(
         default=False,
         description="true=大模型不可用或资料不足，answer 为降级内容（非模型生成）",
+    )
+    tool_calls: list[ToolCallBrief] = Field(
+        default_factory=list,
+        description="本次问答的工具调用轨迹（按执行顺序）；空数组=没有调用工具",
+    )
+    conversation_id: str = Field(
+        default="",
+        description="本次会话 ID；把它作为下一次请求的 conversationId 即可续接多轮",
     )
 
 
@@ -185,3 +209,25 @@ class FormulaDiffData(CamelModel):
         default=False, description="本次是否比对了剂量（当前库内剂量缺失，恒为 false）"
     )
     notice: str = Field(default="", description="免责声明：不推断功效、不构成处方建议")
+
+
+# ==================== 会话历史（history） ====================
+
+
+class ConversationBrief(CamelModel):
+    """会话列表里的一条。"""
+
+    id: str = Field(description="会话 ID，可直接作为下一次 ask 的 conversationId")
+    title: str = Field(default="", description="标题（取首个问题的前 30 字）")
+    created_at: str = Field(default="", description="创建时间（ISO 8601，带时区）")
+    message_count: int = Field(default=0, description="消息条数（只算 user/assistant）")
+    last_at: str = Field(default="", description="最后一条消息时间；空串=还没有消息")
+
+
+class HistoryData(CamelModel):
+    """GET /api/agent/history 的 data。"""
+
+    conversations: list[ConversationBrief] = Field(
+        default_factory=list, description="按创建时间倒序；空数组=还没有会话"
+    )
+    total: int = Field(default=0, description="本次返回的条数（不是全库总数）")

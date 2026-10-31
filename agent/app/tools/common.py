@@ -37,9 +37,17 @@ def _envelope(
     }
 
 
-def ok_result(items: list[dict[str, Any]], notice: str = NOTICE_FACT) -> dict[str, Any]:
-    """有命中。"""
-    return _envelope(ok=True, items=items, notice=notice if items else "")
+def ok_result(
+    items: list[dict[str, Any]],
+    notice: str = NOTICE_FACT,
+    hint: str = "",
+) -> dict[str, Any]:
+    """有命中。
+
+    hint 不是"出错说明"，而是**给模型的附加提醒**：例如「部分条目的 exact=false，
+    只是语义相近、并非关键词确证」，以及图谱结果被 truncated 截断时的说明。
+    """
+    return _envelope(ok=True, items=items, hint=hint, notice=notice if items else "")
 
 
 def miss_result(hint: str, notice: str = "") -> dict[str, Any]:

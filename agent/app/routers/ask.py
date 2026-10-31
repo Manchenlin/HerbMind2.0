@@ -1,13 +1,16 @@
-"""POST /api/agent/ask/sync —— 同步问答（RAG）。
+"""问答端点：POST /api/agent/ask/sync（同步）与 POST /api/agent/ask（SSE 流式）。
 
-流程：问题向量化 → pgvector 召回 Top-K → 拼提示词 → LLM 生成 → 带引用返回。
+两条链路**共用同一套**检索、工具调用循环与提示词，只有输出方式不同：
 
-为什么先做同步版而不是 SSE 流式：
-同步版不用处理长连接、断线重连、前端 EventSource，能先把「检索质量 + 提示词」调通；
-链路稳定后再升级成 ask（SSE），改动只在"输出方式"，检索与提示词可原样复用。
+    问题 → ① 读多轮记忆（带 conversationId 时）
+         → ② pgvector 召回 Top-K（RAG 主链，口径已校准，本轮不动）
+         → ③ 工具调用循环（模型自主取证，最多 N 轮，SSE 推 tool 事件）
+         → ④ 生成回答（带 [n] 引用角标）
+         → ⑤ 后台落库（会话 / 消息 / 工具轨迹，失败不影响回答）
 
 降级策略（不抛 500，永远给前端一个能显示的答案）：
 - 检索异常 / 无命中      → degraded=true，提示换个说法
+- 工具全挂 / 超预算      → 模型拿 error_result 继续生成（工具是增强，不是前置条件）
 - LLM 超时/失败/欠费      → degraded=true，直接列出检索到的资料摘要
 """
 
@@ -19,17 +22,25 @@ import hashlib
 import logging
 import re
 import time
-import uuid
 from collections.abc import AsyncIterator
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 from fastapi.responses import StreamingResponse
+from starlette.background import BackgroundTask
 
+from app.agent.runner import ToolTrace, run_tool_loop, stream_tool_loop
 from app.llm import chat_stream, chat_with_messages
 from app.rag import sse
 from app.rag.context import build_messages, degraded_answer, extract_citations
 from app.rag.retriever import retrieve
-from app.schemas import AskData, AskRequest, AskUsage, R
+from app.repo.conversation import (
+    append_message,
+    ensure_conversation,
+    new_conversation_id,
+    recent_messages,
+    record_tool_call,
+)
+from app.schemas import AskData, AskRequest, AskUsage, R, ToolCallBrief
 
 logger = logging.getLogger("herbmind-agent")
 
@@ -65,24 +76,77 @@ def clamp_citation_tags(text: str, max_index: int) -> tuple[str, list[int]]:
     return cleaned, illegal
 
 
-@router.post("/ask/sync", response_model=R[AskData], summary="同步问答（向量检索 + 大模型）")
+# ==================== 会话落库（后台执行，失败不影响回答） ====================
+
+
+async def _persist_ask(
+    conversation_id: str,
+    user_id: str,
+    question: str,
+    answer: str,
+    traces: list[ToolTrace],
+) -> None:
+    """把一次问答写进 `agent_*` 三表。
+
+    刻意放在响应之后执行（BackgroundTasks）：写库是"锦上添花"，
+    不能让它占用户等待回答的时间。每个 repo 函数自己吞异常只告警。
+    """
+    if not conversation_id:
+        return
+    if not await ensure_conversation(conversation_id, user_id, question):
+        # 会话都没建起来，再写消息一定撞外键，直接放弃（只留 warning）
+        return
+    await append_message(conversation_id, "user", question)
+    assistant_id = await append_message(conversation_id, "assistant", answer)
+    if assistant_id is None:
+        # 只告警不放弃：agent_tool_call.message_id 允许 NULL，
+        # 丢掉轨迹等于丢掉"这轮为什么这样回答"的唯一依据
+        logger.warning(
+            "assistant 消息落库失败，工具轨迹将以 message_id=NULL 写入：conv=%s", conversation_id
+        )
+    for trace in traces:
+        await record_tool_call(
+            assistant_id, trace.name, trace.args, trace.summary, trace.ms
+        )
+
+
+def _trace_briefs(traces: list[ToolTrace]) -> list[ToolCallBrief]:
+    return [ToolCallBrief(**trace.to_dict()) for trace in traces]
+
+
+# ==================== 同步问答 ====================
+
+
+@router.post("/ask/sync", response_model=R[AskData], summary="同步问答（检索 + 工具取证 + 大模型）")
 async def ask_sync(
     req: AskRequest,
+    background: BackgroundTasks,
     x_user_id: str | None = Header(default=None, alias="X-User-Id"),
 ) -> R[AskData]:
     """一次问答（非流式）。只允许经网关访问，必须带网关注入的 X-User-Id。"""
     if not x_user_id:
         raise HTTPException(status_code=401, detail="缺少 X-User-Id：该端点只应经网关访问")
+    if not _rate_ok(x_user_id):
+        # 与 /ask 共用同一套窗口计数：两条链路成本相同（一次问答实测 promptTokens≈5300），
+        # 防护不该只做一半
+        logger.warning("同步问答被限流：user=%s", x_user_id)
+        raise HTTPException(status_code=429, detail="提问过于频繁，请稍后再试")
     question = req.question.strip()
+    # 新会话 ID 带 user 指纹：登录上线前会话只能匿名落库，靠 ID 前缀区分"谁的和谁"，
+    # 否则 history 会把全库匿名会话都返回同一个人（见 repo.anon_scope 的注释）
+    conversation_id = req.conversation_id or new_conversation_id(x_user_id)
     # 问题原文属健康敏感信息，只记长度 + 指纹，便于排查日志关联而不泄露内容
     logger.info(
-        "问答请求：user=%s len=%d fp=%s（topK=%s refType=%s）",
+        "问答请求：user=%s len=%d fp=%s conv=%s（topK=%s refType=%s）",
         x_user_id,
         len(question),
         hashlib.sha1(question.encode("utf-8")).hexdigest()[:8],
+        conversation_id,
         req.top_k,
         req.ref_type,
     )
+
+    history = await recent_messages(req.conversation_id) if req.conversation_id else []
 
     # ---------- ① 检索 ----------
     t0 = time.perf_counter()
@@ -96,35 +160,58 @@ async def ask_sync(
                 citations=[],
                 usage=AskUsage(retrieve_ms=int((time.perf_counter() - t0) * 1000)),
                 degraded=True,
+                conversation_id=conversation_id,
             )
         )
     retrieve_ms = int((time.perf_counter() - t0) * 1000)
 
     if not units:
-        logger.info("问答无命中：%s", question)
+        logger.info("问答无命中：fp=%s", hashlib.sha1(question.encode("utf-8")).hexdigest()[:8])
+        background.add_task(_persist_ask, conversation_id, x_user_id, question, NO_HIT_ANSWER, [])
         return R.ok(
             AskData(
                 answer=NO_HIT_ANSWER,
                 citations=[],
                 usage=AskUsage(retrieve_ms=retrieve_ms),
                 degraded=True,
+                conversation_id=conversation_id,
             )
         )
 
-    # ---------- ② 生成 ----------
+    # ---------- ② 工具取证 ----------
     citations = extract_citations(units)
-    messages = build_messages(question, units)
+    messages = build_messages(question, units, history)
+    t_tools = time.perf_counter()
+    messages, traces, _used = await run_tool_loop(messages)
+    tools_ms = int((time.perf_counter() - t_tools) * 1000)
+    if traces:
+        logger.info(
+            "工具取证：%d 次调用 %dms（%s）",
+            len(traces),
+            tools_ms,
+            ", ".join(f"{t.name}:{'OK' if t.ok else 'FAIL'}/{t.count}" for t in traces),
+        )
+
+    # ---------- ③ 生成 ----------
     t1 = time.perf_counter()
     try:
         answer, usage = await chat_with_messages(messages)
     except Exception as exc:  # noqa: BLE001 —— LLM 挂了也不能让前端空白
         logger.exception("大模型调用失败，走降级")
+        fallback = degraded_answer(units)
+        background.add_task(_persist_ask, conversation_id, x_user_id, question, fallback, traces)
         return R.ok(
             AskData(
-                answer=degraded_answer(units),
+                answer=fallback,
                 citations=citations,
-                usage=AskUsage(retrieve_ms=retrieve_ms, llm_ms=int((time.perf_counter() - t1) * 1000)),
+                usage=AskUsage(
+                    retrieve_ms=retrieve_ms,
+                    llm_ms=int((time.perf_counter() - t1) * 1000),
+                    tools_ms=tools_ms,
+                ),
                 degraded=True,
+                tool_calls=_trace_briefs(traces),
+                conversation_id=conversation_id,
             )
         )
     llm_ms = int((time.perf_counter() - t1) * 1000)
@@ -141,12 +228,16 @@ async def ask_sync(
     total_tokens = int(usage.get("total_tokens") or (prompt_tokens + completion_tokens))
 
     logger.info(
-        "问答完成：检索 %dms / 生成 %dms，命中 %d 条，tokens=%s",
+        "问答完成：检索 %dms / 工具 %dms（%d 次）/ 生成 %dms，命中 %d 条，tokens=%s",
         retrieve_ms,
+        tools_ms,
+        len(traces),
         llm_ms,
         len(citations),
         total_tokens or "未知",
     )
+
+    background.add_task(_persist_ask, conversation_id, x_user_id, question, answer, traces)
 
     return R.ok(
         AskData(
@@ -158,8 +249,11 @@ async def ask_sync(
                 total_tokens=total_tokens,
                 retrieve_ms=retrieve_ms,
                 llm_ms=llm_ms,
+                tools_ms=tools_ms,
             ),
             degraded=False,
+            tool_calls=_trace_briefs(traces),
+            conversation_id=conversation_id,
         )
     )
 
@@ -203,12 +297,17 @@ async def _ask_events(
     req: AskRequest,
     conversation_id: str,
     user_id: str,
+    holder: dict,
 ) -> AsyncIterator[str]:
-    """SSE 事件流。顺序：tool(start) → tool(done) → citation* → token* → done。
+    """SSE 事件流。顺序：retrieval(start) → retrieval(done) → tool(start/done)*
+    → citation* → token* → done。
 
-    为什么把 citation 全部放在 token 之前：
+    为什么 citation 全部放在 token 之前：
     前端可以在第一个字出现前就把引用卡建好，正文里的 [1][2] 一出现就能对上号，
     不会出现"角标先到、卡片后到"的闪烁。代价是首字延迟多了几十毫秒（都是内存操作）。
+
+    工具取证发生在 citation 之后、token 之前：引用卡来自 RAG 检索（此时已确定），
+    工具只是模型额外取证，不能反过来推迟引用卡。
     """
     t0 = time.perf_counter()
     yield sse.tool("retrieval", "start")
@@ -221,7 +320,8 @@ async def _ask_events(
         raise
     except Exception as exc:  # noqa: BLE001 —— 检索失败也要给前端可显示的答复
         logger.exception("流式问答：检索失败")
-        yield sse.token(f"检索服务异常（{type(exc).__name__}），请稍后重试。")
+        text = f"检索服务异常（{type(exc).__name__}），请稍后重试。"
+        yield sse.token(text)
         yield sse.done(conversation_id, True, usage={"retrieveMs": int((time.perf_counter() - t0) * 1000)})
         return
     retrieve_ms = int((time.perf_counter() - t0) * 1000)
@@ -238,8 +338,21 @@ async def _ask_events(
     for idx, cite in enumerate(citations, 1):
         yield sse.citation(idx, cite.model_dump(by_alias=True))
 
-    # ---------- ③ 逐字生成 ----------
-    messages = build_messages(question, units)
+    # ---------- ③ 工具取证（模型自主决定要不要调、调几次） ----------
+    history = await recent_messages(req.conversation_id) if req.conversation_id else []
+    messages = build_messages(question, units, history)
+    traces: list[ToolTrace] = []
+    t_tools = time.perf_counter()
+    async for kind, payload in stream_tool_loop(messages):
+        if kind == "tool":
+            extra = {k: v for k, v in payload.items() if k not in ("name", "status")}
+            yield sse.tool(str(payload.get("name") or ""), str(payload.get("status") or ""), **extra)
+        elif kind == "finish":
+            messages = payload.messages
+            traces = payload.traces
+    tools_ms = int((time.perf_counter() - t_tools) * 1000)
+
+    # ---------- ④ 逐字生成 ----------
     t1 = time.perf_counter()
     buf: list[str] = []
     usage_raw: dict = {}
@@ -271,7 +384,7 @@ async def _ask_events(
         yield sse.token(tail)
     llm_ms = int((time.perf_counter() - t1) * 1000)
 
-    # ---------- ④ 越界引用校对 ----------
+    # ---------- ⑤ 越界引用校对 ----------
     # token 已经发出去了，剔除动作做不了，只能把越界编号回传给前端自己擦
     _, illegal = clamp_citation_tags("".join(buf), len(citations))
     if illegal:
@@ -286,8 +399,10 @@ async def _ask_events(
     total_tokens = int(usage_raw.get("total_tokens") or (prompt_tokens + completion_tokens))
 
     logger.info(
-        "流式问答完成：检索 %dms / 生成 %dms，命中 %d 条，字数 %d，tokens=%s%s",
+        "流式问答完成：检索 %dms / 工具 %dms（%d 次）/ 生成 %dms，命中 %d 条，字数 %d，tokens=%s%s",
         retrieve_ms,
+        tools_ms,
+        len(traces),
         llm_ms,
         len(citations),
         sum(len(x) for x in buf),
@@ -295,11 +410,17 @@ async def _ask_events(
         "（降级）" if degraded else "",
     )
 
+    # 落库放到流结束之后执行（BackgroundTask），不占用生成时间。
+    # 生成器没法"返回"数据给调用方，所以把结果写进本次请求私有的 holder。
+    holder["answer"] = "".join(buf)
+    holder["traces"] = list(traces)
+
     yield sse.done(
         conversation_id,
         degraded,
         usage={
             "retrieveMs": retrieve_ms,
+            "toolsMs": tools_ms,
             "llmMs": llm_ms,
             "promptTokens": prompt_tokens,
             "completionTokens": completion_tokens,
@@ -309,16 +430,32 @@ async def _ask_events(
     )
 
 
+async def _persist_from_holder(
+    conversation_id: str,
+    user_id: str,
+    question: str,
+    holder: dict,
+) -> None:
+    """流结束后从 holder 取最终答案与轨迹落库（见 `_ask_events` 末尾）。"""
+    await _persist_ask(
+        conversation_id,
+        user_id,
+        question,
+        str(holder.get("answer") or ""),
+        list(holder.get("traces") or []),
+    )
+
+
 @router.post("/ask", summary="流式问答（SSE，打字机输出）")
 async def ask_stream(
     req: AskRequest,
     x_user_id: str | None = Header(default=None, alias="X-User-Id"),
 ) -> StreamingResponse:
-    """一次流式问答。与 `/ask/sync` 同一套检索与提示词，只换输出方式。
+    """一次流式问答。与 `/ask/sync` 同一套检索、工具与提示词，只换输出方式。
 
-    ⚠️ 会话尚未落库：`agent_conversation` / `agent_message` 表已建但为空，
-    且 `user_id` 外键指向 `app_user`，未经网关的真实用户 ID 插不进去。
-    所以这里只**回显** conversationId（前端可拿它串多轮），M2 再做持久化。
+    会话落库：请求开始时生成/沿用 conversationId，流结束后后台写入
+    `agent_conversation` / `agent_message` / `agent_tool_call`。
+    带同一个 conversationId 再次提问即接上多轮记忆。
     """
     if not x_user_id:
         raise HTTPException(status_code=401, detail="缺少 X-User-Id：该端点只应经网关访问")
@@ -329,7 +466,9 @@ async def ask_stream(
         raise HTTPException(status_code=429, detail="提问过于频繁，请稍后再试")
 
     question = req.question.strip()
-    conversation_id = req.conversation_id or f"c_{uuid.uuid4().hex[:8]}"
+    # 新会话 ID 带 user 指纹：登录上线前会话只能匿名落库，靠 ID 前缀区分"谁的和谁"，
+    # 否则 history 会把全库匿名会话都返回同一个人（见 repo.anon_scope 的注释）
+    conversation_id = req.conversation_id or new_conversation_id(x_user_id)
     logger.info(
         "流式问答请求：user=%s len=%d fp=%s conv=%s（topK=%s refType=%s）",
         x_user_id,
@@ -340,8 +479,14 @@ async def ask_stream(
         req.ref_type,
     )
 
+    # 每个请求一个私有 holder：生成器把最终答案与工具轨迹写进来，流结束后落库。
+    # 不用模块级变量存，避免并发请求互相覆盖。
+    holder: dict = {"answer": "", "traces": []}
     return StreamingResponse(
-        _ask_events(question, req, conversation_id, x_user_id),
+        _ask_events(question, req, conversation_id, x_user_id, holder),
         media_type="text/event-stream",
         headers=sse.STREAM_HEADERS,
+        background=BackgroundTask(
+            _persist_from_holder, conversation_id, x_user_id, question, holder
+        ),
     )

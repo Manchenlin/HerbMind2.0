@@ -49,6 +49,29 @@ class Settings(BaseSettings):
     neo4j_password: str = ""
     redis_url: str = "redis://localhost:6379/0"
 
+    # ---------- 各 svc 的 /internal 接口（工具的数据源） ----------
+    # 工具不再直连 PG/Neo4j，统一走 svc 的 /internal，保证与 BFF 同一份检索口径。
+    # docker 部署时改成 compose 里的服务名（http://svc-search:8083 等）。
+    svc_catalog_url: str = "http://localhost:8082"
+    svc_search_url: str = "http://localhost:8083"
+    svc_graph_url: str = "http://localhost:8085"
+    svc_connect_timeout: float = 1.0    # 连不上就快速失败，别让问答卡在握手
+    svc_read_timeout: float = 5.0       # 单次 /internal 调用的读超时
+
+    # ---------- Agent 工具调用循环 ----------
+    # 出问题时的总开关：false → 完全退回单轮 RAG（行为与本轮改造前一致）
+    agent_tools_enabled: bool = True
+    agent_max_tool_rounds: int = 3      # 最多几轮工具取证；轮次越多越容易跑偏
+    agent_tool_budget_ms: int = 15000   # 一次问答里工具阶段的累计预算，超了就停止取证直接生成
+    agent_tool_timeout: float = 5.0     # 单个工具的硬超时（失败重试 1 次）
+    # 清单类问题（"哪些方剂含有麻黄"）强制首轮取证：实测 Qwen2.5-7B 在强"只用资料"的
+    # system 下会拿三五条片段凑答案，必须用 tool_choice=required 顶一下。普通问答不受影响。
+    agent_force_tools: bool = True
+
+    # ---------- 会话历史 ----------
+    history_limit: int = 20             # GET /api/agent/history 默认条数（上限 50）
+    memory_messages: int = 6            # 多轮记忆：带 conversationId 时回填的历史消息条数
+
     # ---------- 跨域 ----------
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
