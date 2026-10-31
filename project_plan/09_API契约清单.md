@@ -193,15 +193,19 @@ BFF 是**前端所有请求的落点**，按页面聚合各 svc 的 `/internal/*
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | `/api/agent/ask` | 问答（SSE 流式）✅ 2026-10-26 已实现 |
-| POST | `/api/agent/ask/sync` | 同步问答（调试）✅ 2026-10-22 已实现 |
-| GET | `/api/agent/history` | 会话列表 / 历史（**新增**） |
+| POST | `/api/agent/ask` | 问答（SSE 流式）✅ 2026-10-26 已实现；2026-10-31 增加工具取证轨迹 |
+| POST | `/api/agent/ask/sync` | 同步问答（调试）✅ 2026-10-22 已实现；2026-10-31 增加 `toolCalls` / `conversationId` |
+| GET | `/api/agent/history` | 会话列表 / 历史 ✅ 2026-10-31 已实现（见 §13.4） |
 | POST | `/api/agent/coach` | 辨证教练 |
 | POST | `/api/agent/formula/diff` | 加减**查证**（组成比对 + 引用原文；**不推断功效**，见 00 文档设计红线一） |
 | POST | `/api/agent/grade` | 结构化评分（**供 BFF 编排调用**） |
 | GET | `/api/agent/health` | 健康检查（白名单） |
 
 > Agent 读后端：经 `clients/` 调各 svc 的 `/internal/**`（带 `X-User-Id`）；写：仅写自己的 `agent_*` 表。
+>
+> ✅ 2026-10-31：上述「经 `clients/` 调 `/internal`」已落地——4 个工具
+> （`search_formula` / `search_case` / `semantic_recall` / `graph_neighbors`）不再直连 PG/Neo4j。
+> `ask` 主链的向量检索仍直连 pgvector（口径已按 0.5 阈值 + 6:4 配额校准，本轮不动）。
 
 ## 11. 内部端点总览
 
@@ -332,7 +336,7 @@ Authorization: Bearer <token>
 | `tool` | `{"name":"retrieval","status":"done","hits":5}` | 检索结束 + 命中条数（**新增**，便于工具卡收起） |
 | `citation` | `{"index":1,"id":"cu_14","refType":"formula","refId":"f_5","title":"桂枝汤","snippet":"…","score":0.64}` | 引用卡；`index` 就是正文里 `[n]` 的 n（**新增**） |
 | `token` | `{"text":"无汗"}` | 逐字输出（打字机），粒度 1~4 字不等 |
-| `done` | `{"conversationId":"c_61c46a22","degraded":false,"usage":{…},"illegalCitations":[]}` | 结束；`usage` 与 `illegalCitations`（**新增**） |
+| `done` | `{"conversationId":"c_ec3cb8e5_fb863bb0","degraded":false,"usage":{…},"illegalCitations":[]}` | 结束；`usage` 与 `illegalCitations`（**新增**）；`conversationId` 格式见 §13.4 备注 1 |
 
 > 🔴 **字段名变更，前端请以此表为准（2026-10-26）**
 >
@@ -347,15 +351,33 @@ Authorization: Bearer <token>
 > **限流**：已按本节错误码要求实现 429（单用户 60 秒内 20 次，单进程内存计数）。
 > 另注：`X-User-Id` 是网关信任头、服务端不校验来源，因此 **8091 端口必须只允许网关访问**。
 
-**事件顺序固定**：`tool(start)` → `tool(done)` → `citation × N` → `token × N` → `done`。
-引用卡先于正文，前端可在首字出现前建好卡片表，避免角标先到、卡片后到。
+**事件顺序固定**（2026-10-31 更新，⚠️ 待三人 review）：`tool(retrieval,start)` → `tool(retrieval,done)`
+→ `tool(<取证工具>,start/done)` × 0~N → `citation × N` → `token × N` → `done`。
+
+取证工具的 `tool` 事件比原表多三个字段（只增不改，旧前端可忽略）：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `status` | `start` / `done` | 与原表一致 |
+| `round` | int | 第几轮取证（1 起），用于前端显示"第 2 轮查证" |
+| `args` | object | 仅 `start` 有；**参数值截断到 40 字**，避免工具卡撑爆/泄露整段提问 |
+| `ms` / `hits` / `count` / `ok` / `hit` | int / bool | 仅 `done` 有：耗时、命中条数、是否成功、是否查到 |
+
+引用卡仍然先于正文，前端可在首字出现前建好卡片表，避免角标先到、卡片后到。
+（工具取证发生在 citation 之后、token 之前：引用卡来自 RAG 检索，此时已确定，不该被工具拖延。）
 
 **两个新增字段的用途**：
 - `done.usage`：`{retrieveMs, llmMs, promptTokens, completionTokens, totalTokens}`，可直接打到调试面板。
 - `done.illegalCitations`：模型编造的越界角标编号（如资料只有 5 条却写了 `[6]`）。流式下 token 已发出、正文改不了，只能回传让前端把对应角标擦掉，否则会出现"引用了一张不存在的卡"。
 
-> ⚠️ `conversationId` 目前**只回显不落库**：`agent_conversation` / `agent_message` 表已建但为空，
-> 且 `user_id` 外键指向 `app_user`，未经网关的真实用户 ID 插不进去。多轮持久化留到 M2。
+> ~~⚠️ `conversationId` 目前**只回显不落库**：`agent_conversation` / `agent_message` 表已建但为空，
+> 且 `user_id` 外键指向 `app_user`，未经网关的真实用户 ID 插不进去。多轮持久化留到 M2。~~（**已过期 2026-10-31**）
+>
+> ✅ 2026-10-31：会话已落库。每次问答在流结束后（`BackgroundTask`）写 `agent_message`(user/assistant)
+> 与 `agent_tool_call`；带同一个 `conversationId` 再次提问时，读该会话最近 6 条历史作为多轮记忆
+> （历史只用于理解上下文，system 里明确禁止把它当资料引用）。
+> 已知限制：域2 登录链路尚未产出 `app_user`，会话暂以 `user_id=NULL` 落库，`history` 对未知用户
+> 退化为"匿名会话"（详见 §13.4 备注，登录上线后自动失效）。
 
 - **错误码**：401 / 429 限流 / 5xxx（含 degraded）
 - **请求示例**
@@ -379,6 +401,111 @@ data: {"id":"q_35","type":"quote","sourceId":"35","page":"19","text":"太阳病�
 event: done
 data: {"conversationId":"c_1","degraded":false}
 ```
+
+### 13.3.1 域3 · `POST /api/agent/ask/sync` —— 同步问答的 `data` 字段
+
+> ⚠️ 2026-10-31 新增（域3 提出，**待三人 review**）。本节是 §13.3 的姊妹篇：同一套检索/工具/提示词，只换输出方式。
+
+- **归属**：域3 智能域　**负责人**：C　**鉴权**：需要（`X-User-Id`，缺失 401）
+- **请求体**：与 §13.3 完全一致（`question` 必填；`topK` / `refType` / `conversationId` 可选）
+- **响应 `data`**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `answer` | string | 回答正文，带 `[n]` 引用角标 |
+| `citations` | Citation[] | 引用卡（`id`/`refType`/`refId`/`title`/`snippet`/`score`），与 SSE 的 `citation` 事件同源 |
+| `usage` | object | `{promptTokens, completionTokens, totalTokens, retrieveMs, llmMs, toolsMs}`；**`toolsMs` 为 2026-10-31 新增**（工具取证累计耗时，0=没调工具） |
+| `degraded` | bool | true=模型不可用或资料不足，`answer` 为降级内容 |
+| `toolCalls` | ToolCallBrief[] | **2026-10-31 新增**。本次工具调用轨迹，按执行顺序；空数组=没有调工具 |
+| `conversationId` | string | **2026-10-31 新增**。本次会话 ID；不传则生成，下一次请求带上即可续接多轮 |
+
+`ToolCallBrief` 字段：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `name` | string | 工具名（`search_formula` / `search_case` / `semantic_recall` / `graph_neighbors`） |
+| `args` | object | 模型给的参数，**字符串值截断到 40 字** |
+| `ok` | bool | 工具是否执行成功；false=服务不可达 / 参数非法 |
+| `hit` | bool | 是否查到内容；false=执行成功但库里没有 |
+| `count` | int | 命中条数 |
+| `ms` | int | 耗时（毫秒） |
+| `error` | string | 失败原因（仅 `ok=false` 时可能非空） |
+
+- **错误码**：401（缺 `X-User-Id`）/ 5xxx（含 degraded 降级）
+- **备注**：`ok=false` 与 `hit=false` **语义不同**——前者是"没查成"，后者是"查了但没有"。
+  前端展示时不要合并成一句"未找到"，否则用户会以为库里真没有。
+
+### 13.4 域3 · `GET /api/agent/history` —— 会话列表
+
+> ⚠️ 2026-10-31 新增（域3 提出，**待三人 review**）。
+
+- **归属**：域3 智能域　**负责人**：C
+- **数据源**：`agent_conversation` + `agent_message`（PG），单条聚合 SQL，走索引 `idx_agent_conv_user(user_id, created_at DESC)`
+- **鉴权**：需要。只信网关注入的 `X-User-Id`，**缺失返回 401**；8091 不得对外暴露
+- **查询参数**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|---|---|---|---|---|
+| `limit` | int | 否 | 返回条数，`0`（默认）=用配置 `HISTORY_LIMIT`（默认 20）；**上限 50，超出判参数错误** | `20` |
+
+- **响应 `data`：`HistoryData`**
+
+| 字段 | 类型 | 说明 | 示例 |
+|---|---|---|---|
+| `conversations` | ConversationBrief[] | 按创建时间倒序；空数组=还没有会话 | `[…]` |
+| `total` | int | 本次返回的条数（不是全库总数） | `1` |
+
+`ConversationBrief` 字段：
+
+| 字段 | 类型 | 说明 | 示例 |
+|---|---|---|---|
+| `id` | string | 会话 ID，可直接作为下一次 `ask` 的 `conversationId`。格式 `c_<用户指纹8位>_<随机8位>`（指纹段是登录上线前的临时口径，见备注 1）；**客户端不要解析它**，只透传 | `"c_ec3cb8e5_fb863bb0"` |
+| `title` | string | 标题（取首个问题的前 30 字） | `"无汗而喘脉浮紧用什么方"` |
+| `createdAt` | string | 创建时间，ISO 8601 带时区 | `"2026-10-31T09:30:00+08:00"` |
+| `messageCount` | int | 消息条数（只算 user/assistant） | `4` |
+| `lastAt` | string | 最后一条消息时间；空串=还没有消息 | `"2026-10-31T09:31:12+08:00"` |
+
+- **错误码**：401（缺 `X-User-Id`）/ 400（`limit` 越界）/ 查询失败时 **200 + 空列表**（`msg="暂无会话记录"`），不 500
+- **请求示例**
+
+```
+GET /api/agent/history?limit=20
+X-User-Id: u_2f1c
+```
+
+- **响应示例**
+
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": {
+    "conversations": [
+      {
+        "id": "c_ec3cb8e5_fb863bb0",
+        "title": "无汗而喘脉浮紧用什么方",
+        "createdAt": "2026-10-31T09:30:00+08:00",
+        "messageCount": 4,
+        "lastAt": "2026-10-31T09:31:12+08:00"
+      }
+    ],
+    "total": 1
+  }
+}
+```
+
+- **备注**
+  1. **临时口径（登录上线后自动失效）**：`agent_conversation.user_id` 外键指向 `app_user`，
+     而域2 登录链路尚未产出用户记录。若 `X-User-Id` 在 `app_user` 里不存在，Agent **不会**替用户系统造账号
+     （绝不写 `app_user`），而是以 `user_id=NULL` 落库。
+     此时 `history` 只返回**带该用户指纹的匿名会话**：会话 ID 形如 `c_<8 位指纹>_<8 位随机>`，
+     指纹 = `sha1(X-User-Id)` 前 8 位。不同用户、不同电脑互相看不到对方的会话。
+     域2 登录上线后此分支自动不再命中（`known_user=True` 时只查 `user_id = X-User-Id` 的会话）。
+     > ~~旧口径（**已过期 2026-10-31**）：`history` 退化为返回**全库匿名会话**，
+     > 多人共用部署会互相看到会话标题。~~ 已按上述指纹方案收紧。
+     > 注意这是**防误看**，不是鉴权：指纹只有 32 bit 可枚举，真正的隔离靠网关 JWT + 域2 登录。
+  2. 会话标题是问题前 30 字，可能含健康相关信息；前端列表页不要把它拼进日志或上报。
+  3. 写库失败只 warning，不影响问答返回；因此 `messageCount` 偶尔可能比实际对话轮次少。
 
 > 其余接口按 §0.2 的 8 项逐一补齐；本节的格式即为**模板**。
 

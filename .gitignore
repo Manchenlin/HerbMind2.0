@@ -38,3 +38,7 @@ Thumbs.db
 # PROJECT_MEMORY.md 是索引；细节按主题拆在 memory/ 各分册
 PROJECT_MEMORY.md
 memory/
+
+# 单测报告是每次跑测试重新生成的产物（跑法见 CODEBUDDY.md §八），不进仓库
+agent/test_report.json
+agent/test_report.md

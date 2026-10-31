@@ -11,8 +11,12 @@
 挂着也只会让模型选错工具后编出一个"换算结果"，违反红线二。
 数据补齐后再加，工具总数仍控制在 6~8 个（工具越多选择准确率越低）。
 
-sync / async 混用是刻意的：PG（psycopg）与 Neo4j 驱动是同步的，只有语义召回要等
-异步 embedding 客户端。LangChain 的 `ainvoke` 对两者都能调。
+数据源（2026-10-31 起）：四个工具全部改走各 svc 的 `/internal/**`，不再直连 PG / Neo4j，
+所以**全部是 async**（HTTP 客户端是 `httpx.AsyncClient`）。调用方统一用 `ainvoke`；
+不要用 `invoke` —— 纯 async 工具在同步入口里会直接报「coroutine was never awaited」类错误。
+
+为什么不让工具直连库：同一个问题，前端经 BFF 查一次、Agent 经工具查一次，两套 SQL 必然漂移，
+最后没人说得清哪个结果对。迁到 svc 的 `/internal` 后，检索口径只有一份实现。
 """
 
 from __future__ import annotations

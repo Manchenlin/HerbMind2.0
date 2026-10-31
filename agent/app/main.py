@@ -2,15 +2,17 @@
 
 当前阶段：已实现：
     GET  /api/agent/health        服务自身 + LLM 配置 + PG/Neo4j/Redis 探测
-    POST /api/agent/ask/sync      同步问答（向量检索 + 大模型，带引用）
-    POST /api/agent/ask           流式问答（SSE：tool → citation → token → done）
+    POST /api/agent/ask/sync      同步问答（检索 + 工具取证 + 大模型，带引用与工具轨迹）
+    POST /api/agent/ask           流式问答（SSE：retrieval → tool* → citation → token → done）
     POST /api/agent/formula/diff  方剂加减查证（纯规则，零大模型，不推断功效）
+    GET  /api/agent/history       会话历史（读 agent_conversation / agent_message）
+
+工具数据源（2026-10-31 起）：四个工具不再直连 PG/Neo4j，改走 svc-catalog / svc-search /
+svc-graph 的 `/internal/**`，与 BFF 同一份检索口径。`AGENT_TOOLS_ENABLED=false` 可整体回退到单轮 RAG。
 
 尚未实现（按 project_plan/09_API契约清单.md §10 逐个补，不要提前写进文档谎报）：
-    GET  /api/agent/history        会话历史（依赖 agent_conversation/agent_message 落库；
-                                   该表 user_id 有外键指向 app_user，须等域2 登录链路产出真实用户）
-    POST /api/agent/coach          辨证教练
-    POST /api/agent/grade          结构化评分（供 BFF 编排调用）
+    POST /api/agent/coach          辨证教练（契约只有端点，没有字段细则）
+    POST /api/agent/grade          结构化评分（同上）
 
 启动（在 agent/ 目录下）：
     python -m uvicorn app.main:app --host 0.0.0.0 --port 8091
@@ -34,9 +36,10 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.clients import close_clients, init_clients
 from app.config import get_settings
 from app.db import close_resources, init_resources
-from app.routers import ask, formula, health
+from app.routers import ask, formula, health, history
 from app.schemas import R
 
 logging.basicConfig(
@@ -83,12 +86,15 @@ async def lifespan(_app: FastAPI):
         settings.llm_configured,
     )
     init_resources(settings)
+    # 工具要访问各 svc 的 /internal，HTTP 客户端也在这里建（单例连接池）
+    init_clients(settings)
     warmup = asyncio.create_task(_warmup_embedding()) if settings.llm_configured else None
     try:
         yield
     finally:
         if warmup is not None:
             warmup.cancel()
+        await close_clients()
         close_resources()
         logger.info("Agent 服务已关闭")
 
@@ -97,8 +103,8 @@ app = FastAPI(
     title="HerbMind Agent 服务",
     description=(
         "域3 智能域。已实现：GET /api/agent/health、POST /api/agent/ask/sync、"
-        "POST /api/agent/ask（SSE 流式）、POST /api/agent/formula/diff（加减查证）；"
-        "待实现：history / coach / grade"
+        "POST /api/agent/ask（SSE 流式，带工具取证轨迹）、POST /api/agent/formula/diff（加减查证）、"
+        "GET /api/agent/history（会话历史）；待实现：coach / grade"
     ),
     version=settings.app_version,
     lifespan=lifespan,
@@ -138,6 +144,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api/agent")
 app.include_router(ask.router, prefix="/api/agent")
 app.include_router(formula.router, prefix="/api/agent")
+app.include_router(history.router, prefix="/api/agent")
 
 
 @app.middleware("http")

@@ -1,0 +1,53 @@
+name: agent-tests
+
+# 只跑 Agent（域3）的单测：pytest 里除 test_formula_diff 外全部零外部依赖，
+# test_formula_diff 在没有 PG 时会自己 skip（见 tests/test_formula_diff.py 的 _pg_ready）。
+# 所以这里不需要起数据库，跑完只要几秒。
+#
+# 为什么加这个：仓库原先没有 CI，两个人在同一文件的不同函数里各改一处时，
+# GitHub 会显示"Able to merge"，只有跑一遍测试才知道逻辑有没有打架。
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "agent/**"
+      - ".github/workflows/agent-tests.yml"
+  pull_request:
+    paths:
+      - "agent/**"
+      - ".github/workflows/agent-tests.yml"
+
+# 同一分支连续推送时，取消上一次未跑完的，省额度
+concurrency:
+  group: agent-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest（Python 3.11）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 准备 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            agent/requirements.txt
+            agent/requirements-dev.txt
+
+      - name: 安装依赖（含 pytest）
+        # 必须用 requirements-dev.txt：requirements.txt 是运行依赖，不含 pytest，
+        # 只装它会报 `No module named pytest`（第一次跑 CI 就踩了）
+        run: pip install -r requirements-dev.txt
+
+      - name: 跑单测
+        run: python -m pytest tests -q

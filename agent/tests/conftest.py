@@ -34,3 +34,20 @@ def reset_rate_limit():
     ask_router._rate_hits.clear()
     yield
     ask_router._rate_hits.clear()
+
+
+@pytest.fixture(autouse=True)
+def disable_agent_tools(monkeypatch):
+    """默认关闭工具调用循环。
+
+    原因：`app/agent/runner.py` 会真的 `get_chat_model().bind_tools()` 再发一次决策请求。
+    本机 `.env` 里有真实 key，问答用例若不关就会真联网、真烧额度，还会因模型波动偶发超时
+    （表现为"测试时快时慢"，很难定位）。
+
+    测工具链路的用例（`test_agent_loop.py` / `test_ask_memory.py`）在自己内部显式打开，
+    并替换 `get_chat_model` 为假模型。
+    """
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "agent_tools_enabled", False)
+    yield

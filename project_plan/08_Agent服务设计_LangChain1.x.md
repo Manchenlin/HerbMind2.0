@@ -104,10 +104,10 @@ agent/
 
 | 工具（`@tool`） | 期 | 入参 | 返回 | 依赖 |
 |---|---|---|---|---|
-| `search_formula` | **一期** | name / herb / syndrome | 方剂列表 | svc-catalog |
-| `search_case` | **一期** | diagnosis / formula / symptom | 案例列表 | svc-catalog |
-| `semantic_recall` | **一期** | query, top_k | chunk + score | svc-search(pgvector) |
-| `graph_neighbors` | **一期** | entity, label, hops | 邻居子图 | svc-graph |
+| `search_formula` | **一期** | name / herb / syndrome | 方剂列表 | svc-search `/internal/search?type=formula`（原写 svc-catalog，2026-10-31 更正） |
+| `search_case` | **一期** | diagnosis / formula / symptom | 案例列表 | svc-search `/internal/search?type=case`（原写 svc-catalog，2026-10-31 更正） |
+| `semantic_recall` | **一期** | query, top_k | chunk + score | svc-search `/internal/search/recall` |
+| `graph_neighbors` | **一期** | entity, label, hops | 邻居子图 | svc-graph `/internal/graph/neighbors` |
 | `syndrome_score` | **一期** | user_syndrome, ref_syndrome | 命中/遗漏/多余 + 分 | LLM + 证候字典 |
 | `dosage_convert` | **一期** | value, unit, dynasty | 现代克数 + 依据 | PG dosage_rule |
 | `search_quote` | 二期 | article_no / classic / keyword | 条文列表 | svc-catalog |
@@ -146,9 +146,18 @@ def graph_neighbors(entity: str, label: str, hops: int = 1) -> dict:
 
 | 类型 | 实现 | 用途 |
 |---|---|---|
-| 短期 | checkpointer（`thread_id` = 会话 ID） | 多轮对话上下文 |
-| 压缩 | `SummarizationMiddleware` | 超长会话自动摘要 |
-| 长期 | 写 PG（`learning_profile` / `user_*`） | 用户偏好、我的方证库、薄弱点 → 个性化 |
+| 短期 | ~~checkpointer（`thread_id` = 会话 ID）~~ → **`agent_message` 表**（取最近 6 条） | 多轮对话上下文 |
+| 压缩 | `SummarizationMiddleware`（**未实现**） | 超长会话自动摘要 |
+| 长期 | 写 PG（`learning_profile` / `user_*`，**未实现**） | 用户偏好、我的方证库、薄弱点 → 个性化 |
+
+> ⚠️ **有意偏差（2026-10-31，域3 提出，待三人 review）**：短期记忆**不用** LangGraph checkpointer，
+> 直接读 `agent_message` 表里最近 6 条 user/assistant 消息。
+>
+> 理由：这张表本来就要为 `GET /api/agent/history` 落库（见 09 §13.4），同一份数据两用；
+> 引入 checkpointer 会多一个依赖 + 一套 schema（生产要 Postgres/SQLite saver、测试还要造假实现），收益不抵成本。
+>
+> 实现口径：历史消息插在 system 之后、当前问题之前；system 里额外声明
+> 「历史对话只用于理解上下文，不是【资料】，不得引用其中的编号」——否则模型会引用自己上一轮的回答。
 
 ## 7. 结构化输出（评分/推荐）
 
@@ -209,6 +218,24 @@ Agent 不直接连业务库做写操作，而是：
 - **读**：经 `clients/` 调 svc-catalog / svc-search / svc-graph / svc-insight 的 `/internal/**`（服务间直连，带 `X-User-Id`）。
 - **写**（评分、会话留痕）：写自己的 `agent_*` 表；**评分结果不由 Agent 落库**——由 BFF 编排：`POST /api/biz/train/answer` → BFF 调 svc-training 存答案 → 调 Agent `/api/agent/grade` → 调 `svc-training /internal/training/score` 落分。
 - 网关负责对外的 JWT 鉴权；Agent 信任网关透传的用户头。
+
+> ✅ **2026-10-31 落地情况**（域3 提出，待三人 review）：
+>
+> 1. `clients/` 已建（`agent/app/clients/{base,catalog,search,graph}.py`）：`httpx.AsyncClient` 单例、
+>    connect 1s / read 5s 超时、连接池 20；成功响应按**裸 DTO** 解析，非 2xx 取 `R.msg` 抛 `SvcError`，
+>    连不上/超时统一 `SvcError(status=0)`。工具层据此区分「查不到（4040 → hit=false）」与「服务坏了（ok=false）」。
+> 2. 一期 4 个工具**全部**改走 `/internal`；`syndrome_score` / `dosage_convert` 仍未挂（依赖的表 0 行）。
+> 3. **`ask` 主链的向量检索仍直连 pgvector**（`app/rag/retriever.py` 未迁）：它的 0.5 阈值 + 方剂 6:4 配额
+>    是按真实问答质量校准出来的，本期只迁工具，避免同时改两处导致问答质量不可归因。
+> 4. 工具调用循环手写（`app/agent/runner.py`，`bind_tools` + `tool_calls` 判空），**不用** `create_agent`：
+>    需要精确控制 SSE 事件时序、轮次上限（默认 3）、工具阶段预算（默认 15s）、失败降级。
+>    `AGENT_TOOLS_ENABLED=false` 可一键回退到单轮 RAG。
+> 5. **清单类问题强制取证**（`needs_tool_evidence` + `AGENT_FORCE_TOOLS`）：
+>    实测 Qwen2.5-7B 在「只能依据【资料】回答」的强 system 下，面对「哪些方剂含有麻黄」会拿
+>    召回到的 3~5 条片段凑一份"完整清单"，一次工具都不调；提示词里连写三版"必须先调工具"均无效
+>    （`run_tool_loop` 的 `used` 恒为 False），只有 `tool_choice="required"` 能稳定触发。
+>    因此对**列举/统计/核对清单**这类问法（正则刻意写窄，见 `_NEEDS_EVIDENCE`）首轮强制取证，
+>    第二轮回到 `auto`；普通问答（解释条文、归纳证治）不强制，不受影响。绑定失败自动降级为 `auto`。
 
 ## 12. LLM 健壮性与成本
 

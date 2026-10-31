@@ -1,8 +1,19 @@
 # HerbMind Agent 测试依赖（只在开发/CI 装，不进运行镜像）
+#
 # 安装：conda activate herbmind && pip install -r requirements-dev.txt
 # 国内镜像：pip install -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+#
+# 为什么 CI 必须装本文件而不是 requirements.txt：
+# requirements.txt 是运行依赖、**不含 pytest**；CI 从零 pip install 只装它会报
+# `No module named pytest`（2026-10-31 首次跑 CI 就踩了）。
+#
+# 用法：
+#   pip install -r requirements-dev.txt
+#   python -m pytest tests -q
 
 -r requirements.txt
 
 # --- 测试 ---
-pytest>=8.0            # 实测 9.1.1；tests/ 下用例也可不装 pytest 直跑
+# 项目只用标准 API（parametrize / skip / fixture），不依赖 pytest-asyncio 等插件：
+# 异步用例统一用 asyncio.run() 跑，见 tests/test_agent_loop.py 等。
+pytest>=8.0,<10.0      # 实测 9.1.1；tests/ 下用例也可不装 pytest 直跑
