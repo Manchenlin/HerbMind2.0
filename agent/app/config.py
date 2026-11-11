@@ -64,6 +64,10 @@ class Settings(BaseSettings):
     agent_max_tool_rounds: int = 3      # 最多几轮工具取证；轮次越多越容易跑偏
     agent_tool_budget_ms: int = 15000   # 一次问答里工具阶段的累计预算，超了就停止取证直接生成
     agent_tool_timeout: float = 5.0     # 单个工具的硬超时（失败重试 1 次）
+    # 证候比对这类**工具内部要调 LLM** 的，1~8s 是常态，5s 会常态化超时：
+    # 超时后协程被取消，工具内部的降级逻辑来不及执行，只会得到一条 error_result。
+    # 给足 20s（仍受 agent_tool_budget_ms 总预算约束），且这类工具**不重试**避免双倍烧钱。
+    agent_llm_tool_timeout: float = 20.0
     # 清单类问题（"哪些方剂含有麻黄"）强制首轮取证：实测 Qwen2.5-7B 在强"只用资料"的
     # system 下会拿三五条片段凑答案，必须用 tool_choice=required 顶一下。普通问答不受影响。
     agent_force_tools: bool = True

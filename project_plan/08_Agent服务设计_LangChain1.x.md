@@ -108,7 +108,7 @@ agent/
 | `search_case` | **一期** | diagnosis / formula / symptom | 案例列表 | svc-search `/internal/search?type=case`（原写 svc-catalog，2026-10-31 更正） |
 | `semantic_recall` | **一期** | query, top_k | chunk + score | svc-search `/internal/search/recall` |
 | `graph_neighbors` | **一期** | entity, label, hops | 邻居子图 | svc-graph `/internal/graph/neighbors` |
-| `syndrome_score` | **一期** | user_syndrome, ref_syndrome | 命中/遗漏/多余 + 分 | LLM + 证候字典 |
+| `syndrome_score` | **一期** | user_syndrome, ref_syndrome | 命中/遗漏/多余 + 分 | 自由文本证候（`formula.syndrome_text` / `case_record.syndrome_text`），**不需要**`syndrome` 字典表（2026-11-11 更正） |
 | `dosage_convert` | **一期** | value, unit, dynasty | 现代克数 + 依据 | PG dosage_rule |
 | `search_quote` | 二期 | article_no / classic / keyword | 条文列表 | svc-catalog |
 | `graph_path` | 二期 | from, to | 路径列表 | svc-graph |
@@ -117,6 +117,8 @@ agent/
 | `get_user_profile` | 二期 | user_id | 画像/薄弱点 | svc-training |
 
 > **一期只挂 6 个高频工具**（`search_formula`、`search_case`、`semantic_recall`、`graph_neighbors`、`syndrome_score`、`dosage_convert`）——工具数 ≤ 6~8 可显著提升 LLM 选择准确率；二期再补至 11。
+>
+> `[实核 2026-11-11]` 实际挂的是 **5 个**：`dosage_convert` 仍不挂（`dosage_rule` 0 行，挂了只能编），其余 5 个已全部落地。
 
 ```python
 from langchain_core.tools import tool
@@ -224,7 +226,9 @@ Agent 不直接连业务库做写操作，而是：
 > 1. `clients/` 已建（`agent/app/clients/{base,catalog,search,graph}.py`）：`httpx.AsyncClient` 单例、
 >    connect 1s / read 5s 超时、连接池 20；成功响应按**裸 DTO** 解析，非 2xx 取 `R.msg` 抛 `SvcError`，
 >    连不上/超时统一 `SvcError(status=0)`。工具层据此区分「查不到（4040 → hit=false）」与「服务坏了（ok=false）」。
-> 2. 一期 4 个工具**全部**改走 `/internal`；`syndrome_score` / `dosage_convert` 仍未挂（依赖的表 0 行）。
+> 2. 一期 4 个检索类工具**全部**改走 `/internal`；`dosage_convert` 仍未挂（`dosage_rule` 0 行）。
+>    `syndrome_score` 已于 **2026-11-11 补挂**，见下方第 6 条；此前记的"依赖的表 0 行所以不挂"
+>    属误判 —— 那三张表是图谱查询的前提，不是打分的前提。
 > 3. **`ask` 主链的向量检索仍直连 pgvector**（`app/rag/retriever.py` 未迁）：它的 0.5 阈值 + 方剂 6:4 配额
 >    是按真实问答质量校准出来的，本期只迁工具，避免同时改两处导致问答质量不可归因。
 > 4. 工具调用循环手写（`app/agent/runner.py`，`bind_tools` + `tool_calls` 判空），**不用** `create_agent`：
@@ -236,6 +240,17 @@ Agent 不直接连业务库做写操作，而是：
 >    （`run_tool_loop` 的 `used` 恒为 False），只有 `tool_choice="required"` 能稳定触发。
 >    因此对**列举/统计/核对清单**这类问法（正则刻意写窄，见 `_NEEDS_EVIDENCE`）首轮强制取证，
 >    第二轮回到 `auto`；普通问答（解释条文、归纳证治）不强制，不受影响。绑定失败自动降级为 `auto`。
+
+> 6. **`syndrome_score` 的职责切分（2026-11-11）**：参考答案条目由**代码**按标点切分、
+>    遗漏项由「候选条目 − 命中」推出、分数由 `|hit| / (|hit| + |miss|)` 算；
+>    模型只回答一件事——学生答到了哪几条（`SyndromeScore.matched`，须逐字照抄候选条目）。
+>    理由：实测 Qwen2.5-7B 让它自己切条目，会把「脉浮缓」拆成「脉浮」+「脉缓」并漏掉「头痛」，
+>    同一答案给到 60 分（正确应为 40）。改成"代码给清单、模型做二分类"后降到 40。
+>    防幻觉：模型回的条目若与候选清单（去标点后）对不上，**一律丢弃**，宁可少算命中。
+>    降级：模型未配置 / 超时 / 判全错但字面有明显重合 → 退回条目级字面比对并置 `degraded=true`。
+>    参考答案来源 `[实核 2026-11-11]`：`formula.syndrome_text` 232/245、`case_record.syndrome_text`
+>    276/290；`case_record.symptoms_jsonb` / `signs_jsonb` 全空；`syndrome` / `symptom` /
+>    `formula_syndrome_rel` 仍 0 行。调用方负责取参考答案，工具本身不查库。
 
 ## 12. LLM 健壮性与成本
 
