@@ -41,6 +41,8 @@ export interface SearchRequest {
   q: string
   type?: string
   bookId?: string
+  /** 目录节点：只搜该章/节/类及其后代（书内搜索用） */
+  nodeId?: string
   herb?: string
   page?: number
   size?: number
@@ -66,7 +68,15 @@ export interface QuoteIndexResult {
 /** 多维 / 关键词检索（分面） */
 export function search(q: string, opts: Omit<SearchRequest, 'q'> = {}) {
   return request.get<unknown, SearchResult>('/biz/search', {
-    params: { q, type: opts.type, bookId: opts.bookId, herb: opts.herb, page: opts.page, size: opts.size }
+    params: {
+      q,
+      type: opts.type,
+      bookId: opts.bookId,
+      nodeId: opts.nodeId,
+      herb: opts.herb,
+      page: opts.page,
+      size: opts.size
+    }
   })
 }
 
