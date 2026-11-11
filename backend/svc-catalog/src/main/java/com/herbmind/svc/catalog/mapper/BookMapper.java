@@ -1,6 +1,7 @@
 package com.herbmind.svc.catalog.mapper;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -41,4 +42,48 @@ public interface BookMapper extends BaseMapper<Book> {
 
     @Select("SELECT id FROM book ORDER BY id")
     List<String> allBookIds();
+
+    /**
+     * 取某目录节点子树下的全部单元正文，按原书页序排列。
+     *
+     * <p>三路来源：方剂单元、医案单元（医案本身没有 node_id，靠主治方剂挂到节点上）、
+     * 理论单元（第一章那 3 节，ref_type='node'）。
+     * 排序用 `meta_jsonb->>'page'` 里的起始页码（形如「第19-22页」取 19），无页码的排最后。
+     *
+     * <p>三个 id 列表调用方必须保证非空（空列表会生成 `IN ()` 语法错误），服务层用哨兵值兜住。
+     *
+     * <p>为什么还要按标题兜底：实测 245 个方剂里有 **131 个 `node_id` 为空**（原 ETL 没回填），
+     * 只按节点挂接取数会让这些方剂的正文在节/章页上凭空消失。
+     * `content_unit.meta_jsonb` 里存了 chapter / section / category 三段名称，
+     * 与 book_node.title 是对得上的，所以再用标题匹配一次兜住漏挂的单元。
+     * titles 用 chr(1) 拼成一个字符串传进来（避免 MyBatis 反复 foreach），空则传哨兵。
+     *
+     * <p>排序第三级：`import_docx_gap.py` 补录的节级补充单元（meta_jsonb.gap=true）
+     * 与原文单元同页时排在前面 —— 它们是节的概述/病机论述，原书位置就在该节开头；
+     * 只靠 id 排序会排到同页原文之后（`cu_gap_*` 的 'g' 大于数字）。
+     */
+    @Select("<script>"
+            + "SELECT u.id AS id, u.ref_type AS ref_type, u.ref_id AS ref_id, u.title AS title,"
+            + " u.unit_type AS unit_type, coalesce(u.meta_jsonb->>'page', '') AS page,"
+            + " u.content AS content"
+            + " FROM content_unit u"
+            + " WHERE (u.ref_type = 'formula' AND u.ref_id IN "
+            + "<foreach collection='formulaIds' item='x' open='(' separator=',' close=')'>#{x}</foreach>)"
+            + " OR (u.ref_type = 'case' AND u.ref_id IN "
+            + "<foreach collection='caseIds' item='x' open='(' separator=',' close=')'>#{x}</foreach>)"
+            + " OR (u.ref_type = 'node' AND u.ref_id IN "
+            + "<foreach collection='nodeIds' item='x' open='(' separator=',' close=')'>#{x}</foreach>)"
+            + " OR coalesce(u.meta_jsonb->>'section', '') = ANY(string_to_array(#{titles}, chr(1)))"
+            + " OR coalesce(u.meta_jsonb->>'category', '') = ANY(string_to_array(#{titles}, chr(1)))"
+            + " OR coalesce(u.meta_jsonb->>'chapter', '') = ANY(string_to_array(#{titles}, chr(1)))"
+            + " ORDER BY coalesce(nullif(regexp_replace(coalesce(u.meta_jsonb->>'page', ''),"
+            + " '^第([0-9]+).*$', '\\1'), '')::int, 999999),"
+            + " CASE WHEN u.meta_jsonb->>'gap' = 'true' THEN 0 ELSE 1 END,"
+            + " coalesce(nullif(u.meta_jsonb->>'gapSeq', '')::int, 0),"
+            + " u.id"
+            + "</script>")
+    List<Map<String, Object>> unitsOfNode(@Param("formulaIds") List<String> formulaIds,
+            @Param("caseIds") List<String> caseIds,
+            @Param("nodeIds") List<String> nodeIds,
+            @Param("titles") String titles);
 }

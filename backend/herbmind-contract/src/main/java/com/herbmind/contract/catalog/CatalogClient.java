@@ -37,6 +37,10 @@ public interface CatalogClient {
     @GetMapping("/node/{id}/detail")
     NodeDetailVO nodeDetail(@PathVariable("id") String id);
 
+    /** 节点下全部单元正文（按原书页序），供"典籍阅读"还原原书版面。 */
+    @GetMapping("/node/{id}/content")
+    NodeContentVO nodeContent(@PathVariable("id") String id);
+
     @GetMapping("/formula/{id}")
     FormulaVO formula(@PathVariable("id") String id);
 

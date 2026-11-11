@@ -385,18 +385,29 @@ public class SearchService {
             args.add(bookId);
         }
         if (nodeId != null) {
-            // 递归取该节点及其所有后代，再映射到方剂 / 医案（条文与目录无关）
-            sql.append(" AND ref_id IN (")
-                    .append("WITH RECURSIVE t AS (")
-                    .append(" SELECT id FROM book_node WHERE id = ?")
-                    .append(" UNION ALL")
-                    .append(" SELECT n.id FROM book_node n JOIN t ON n.parent_id = t.id)")
-                    .append(" SELECT f.id FROM formula f JOIN t ON f.node_id = t.id")
+            // 递归取该节点及其所有后代，再映射到方剂 / 医案 / 原文单元（条文与目录无关）。
+            //
+            // 原文单元（ref_type='node'）原先漏掉了：`content_unit` 没有 node_id 列，
+            // 章节信息只在 meta_jsonb 的 chapter/section 里，而第一章理论单元与
+            // import_docx_gap.py 补录的节级概述都挂在这一类上。不补这条，
+            // 「在某一节里搜原文」会一条都搜不到。
+            String rec = "WITH RECURSIVE t AS ("
+                    + " SELECT id FROM book_node WHERE id = ?"
+                    + " UNION ALL"
+                    + " SELECT n.id FROM book_node n JOIN t ON n.parent_id = t.id) ";
+            sql.append(" AND (ref_id IN (").append(rec)
+                    .append("SELECT f.id FROM formula f JOIN t ON f.node_id = t.id")
                     .append(" UNION")
                     .append(" SELECT c.id FROM case_record c JOIN formula f2 ON c.main_formula_id = f2.id")
                     .append(" JOIN t ON f2.node_id = t.id)")
-                    .append("");
-            args.add(nodeId);
+                    .append(" OR (ref_type = 'node' AND ref_id IN (").append(rec).append("SELECT id FROM t))")
+                    .append(" OR coalesce(meta_jsonb->>'section', '') = ANY(ARRAY(")
+                    .append(rec).append("SELECT title FROM t))")
+                    .append(" OR coalesce(meta_jsonb->>'chapter', '') = ANY(ARRAY(")
+                    .append(rec).append("SELECT title FROM t)))");
+            for (int i = 0; i < 4; i++) {
+                args.add(nodeId);
+            }
         }
         if (herb != null) {
             sql.append(" AND ref_id IN (SELECT formula_id FROM formula_herb WHERE herb_name ILIKE ?)");
