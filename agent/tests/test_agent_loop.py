@@ -413,3 +413,59 @@ def test_forced_binding_failure_falls_back_to_auto(monkeypatch) -> None:
     _run(messages)
 
     assert model.choices == ["auto", "auto"]
+
+
+# ==================== 决策轮不带【资料】（2026-11-11 回归） ====================
+# 背景：库内医案/方剂正文自带「【问题】1.某某如何鉴别?」小标题，取第一个标记会把
+# 整段资料当成问题；资料一起塞进决策轮后，Qwen2.5-7B 会写到撞 max_tokens，
+# 服务端返回 HTTP 200 + choices:[]，LangChain 取 generations[0][0] 抛
+# IndexError: list index out of range —— 表现是「第 1 轮工具决策失败」+ 白等 20 秒。
+
+_MATERIAL_WITH_INNER_MARKER = (
+    "【资料】\n"
+    "[1]（方剂：射干麻黄汤）\n组成：射干、麻黄\n"
+    "按语：【问题】1.射干麻黄汤应如何与小青龙汤鉴别?\n\n"
+    "【问题】\n麻黄汤的组成是什么？"
+)
+
+
+def test_question_of_takes_last_marker() -> None:
+    """资料正文里也带「【问题】」小标题时，取最后一个标记后面那段。"""
+    got = runner._question_of([{"role": "user", "content": _MATERIAL_WITH_INNER_MARKER}])
+
+    assert got == "麻黄汤的组成是什么？"
+
+
+def test_decision_messages_drop_materials() -> None:
+    """决策轮只发 system + 问题，不再发【资料】。"""
+    messages = [
+        {"role": "system", "content": "系统提示"},
+        {"role": "user", "content": _MATERIAL_WITH_INNER_MARKER},
+    ]
+
+    decision = runner._decision_messages(messages)
+
+    assert [m["role"] for m in decision] == ["system", "user"]
+    assert decision[-1]["content"] == "麻黄汤的组成是什么？"
+    assert "组成：射干、麻黄" not in decision[-1]["content"]
+
+
+def test_loop_keeps_materials_for_final_answer(monkeypatch) -> None:
+    """资料不能在链路上丢掉：决策轮精简，最终生成必须仍带【资料】+ 工具结果。"""
+    _enable(monkeypatch)
+    _patch_tool(monkeypatch, _FakeTool())
+    model = _FakeModel([_tool_call(), AIMessage(content="好")])
+    monkeypatch.setattr(runner, "get_chat_model", lambda: model)
+
+    messages = [
+        {"role": "system", "content": "系统提示"},
+        {"role": "user", "content": _MATERIAL_WITH_INNER_MARKER},
+    ]
+    final, _events = _run(messages)
+
+    # 第 1 轮送给模型的最后一条消息只有问题
+    assert model.calls[0][-1]["content"] == "麻黄汤的组成是什么？"
+    # 但最终用于生成的消息仍保留完整资料
+    assert "组成：射干、麻黄" in final.messages[1]["content"]
+    assert any(isinstance(m, ToolMessage) for m in final.messages)
+    assert final.used is True

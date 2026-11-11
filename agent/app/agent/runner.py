@@ -72,12 +72,36 @@ _NEEDS_EVIDENCE = re.compile(
 
 
 def _question_of(messages: list[Any]) -> str:
-    """从最后一条 user 消息里取出【问题】段（`build_messages` 拼的格式）。"""
+    """从最后一条 user 消息里取出【问题】段（`build_messages` 拼的格式）。
+
+    必须用 `rsplit(..., 1)` 取**最后一个**【问题】标记：库里的医案/方剂正文本身常带
+    「【问题】1.某某如何鉴别?」这类小标题（如射干麻黄汤、麻黄连翘赤小豆汤的按语），
+    用 split 取第一个标记会把整段【资料】当成"问题"，进而
+    ① `needs_tool_evidence` 误判、② 决策轮精简失效（资料照旧塞进去）。
+    2026-11-11 排查工具决策 IndexError 时就是踩在这里。
+    """
     for message in reversed(messages):
         content = message.get("content") if isinstance(message, dict) else getattr(message, "content", "")
         if isinstance(content, str) and "【问题】" in content:
-            return content.split("【问题】", 1)[1].strip()
+            return content.rsplit("【问题】", 1)[1].strip()
     return ""
+
+
+def _decision_messages(messages: list[Any]) -> list[Any]:
+    """决策轮用的精简消息：保留 system / 历史，但**去掉【资料】只留【问题】**。
+
+    为什么必须去掉资料（2026-11-11 实核，硅基流动 + Qwen2.5-7B）：
+    带上 5 条召回资料再 `tool_choice="required"`，模型会顺着资料往下写长文，
+    直到撞满 `max_tokens`（实测 completion_tokens 恰好等于 800 / 2000，加到 2000 也一样），
+    此时服务端返回 **HTTP 200 但 `choices: []`**，LangChain 取 `generations[0][0]`
+    直接 `IndexError: list index out of range` —— 表现就是「第 1 轮工具决策失败」+ 白等 15~20 秒 + 一次工具都没调。
+    只发问题（不带资料）时同一问句 4 秒内返回 `search_formula(name="麻黄汤")`。
+    决策轮的正文本就不采用（最终回答另起 astream 生成），所以去掉资料不损失任何信息。
+    """
+    question = _question_of(messages)
+    if not question:
+        return list(messages)
+    return list(messages[:-1]) + [{"role": "user", "content": question}]
 
 
 def needs_tool_evidence(question: str) -> bool:
@@ -291,7 +315,8 @@ async def stream_tool_loop(messages: list[Any]) -> AsyncIterator[tuple[str, Any]
     调用方拿到 `finish` 后用最终 messages 走 astream 逐字生成。
     """
     settings = get_settings()
-    current: list[Any] = list(messages)
+    current: list[Any] = list(messages)          # 最终生成用的完整消息（含【资料】+ 工具结果）
+    decision: list[Any] = _decision_messages(messages)  # 决策轮用的精简消息（不含【资料】）
     traces: list[ToolTrace] = []
     used = False
 
@@ -326,11 +351,13 @@ async def stream_tool_loop(messages: list[Any]) -> AsyncIterator[tuple[str, Any]
             break
         active = forced_model if (round_index == 1 and forced_model is not None) else model
         try:
-            ai = await asyncio.wait_for(active.ainvoke(current), timeout=_DECISION_TIMEOUT)
+            ai = await asyncio.wait_for(active.ainvoke(decision), timeout=_DECISION_TIMEOUT)
         except asyncio.CancelledError:
             raise
         except Exception as exc:  # noqa: BLE001 —— 决策轮失败就当"模型不需要工具"
-            logger.warning("第 %d 轮工具决策失败，停止取证：%s", round_index, exc)
+            # 带上 traceback：只打印 exc 时看不出是模型返回空 choices、还是消息序列不合法，
+            # 2026-11-11 排查 "list index out of range" 就是卡在这一层看不到栈。
+            logger.warning("第 %d 轮工具决策失败，停止取证：%s", round_index, exc, exc_info=True)
             break
 
         calls = list(getattr(ai, "tool_calls", None) or [])
@@ -341,6 +368,7 @@ async def stream_tool_loop(messages: list[Any]) -> AsyncIterator[tuple[str, Any]
 
         used = True
         current.append(ai)
+        decision.append(ai)
 
         for call in calls:
             name = str(call.get("name") or "")
@@ -364,9 +392,11 @@ async def stream_tool_loop(messages: list[Any]) -> AsyncIterator[tuple[str, Any]
                 },
             )
             # ToolMessage.content 必须是字符串：模型看不到 Python 对象
-            current.append(
-                ToolMessage(content=json.dumps(result, ensure_ascii=False), tool_call_id=call_id)
+            tool_message = ToolMessage(
+                content=json.dumps(result, ensure_ascii=False), tool_call_id=call_id
             )
+            current.append(tool_message)
+            decision.append(tool_message)
 
     yield ("finish", _LoopResult(messages=current, traces=traces, used=used))
 
