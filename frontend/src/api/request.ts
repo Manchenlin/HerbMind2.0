@@ -5,7 +5,7 @@ import axios from 'axios'
  * - baseURL = /api（Vite proxy → 网关 :8080）
  * - 请求头带 Authorization: Bearer <token>
  * - 响应拦截：剥掉 R<T> 外壳，直接返回 data（前端只认 camelCase 字段）
- * - 401/403：清 token 跳 /login
+ * - 401：清 token 跳 /login（403 是"已登录但没权限"，不清 token，交给页面显示 msg）
  * - 其它错误：优先用后端 R.msg（09 契约要求 HTTP 状态码正确，axios 会走 error 分支）
  */
 const request = axios.create({ baseURL: '/api', timeout: 15000 })
