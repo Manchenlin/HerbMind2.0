@@ -15,13 +15,15 @@ from db import neo4j_driver, query  # noqa: E402
 BFF = os.getenv("BFF_BASE", "http://localhost:8090")
 FAIL = False
 
-# 正式数据基线（来自 migrate_legacy）
+# 正式数据基线（来自 migrate_legacy + 2026-10-26 补录）
+# formula_herb 从 1006 涨到 1315：2026-10-26 用 database/etl/apply_supplement.py 补了 309 条组成，
+# 补录输入见 database/etl/data/formula_herb_supplement.csv。改这条基线前先确认补录是否仍然生效。
 EXPECT = {
     "formula": 245,
     "case_record": 290,
     "classic_quote": 568,
     "content_unit": 535,
-    "formula_herb": 1006,
+    "formula_herb": 1315,
 }
 
 
