@@ -15,14 +15,16 @@ from db import neo4j_driver, query  # noqa: E402
 BFF = os.getenv("BFF_BASE", "http://localhost:8090")
 FAIL = False
 
-# 正式数据基线（来自 migrate_legacy + 2026-10-26 补录）
+# 正式数据基线（来自 migrate_legacy + 2026-10-26 补录 + 2026-11-11 第一章）
 # formula_herb 从 1006 涨到 1315：2026-10-26 用 database/etl/apply_supplement.py 补了 309 条组成，
 # 补录输入见 database/etl/data/formula_herb_supplement.csv。改这条基线前先确认补录是否仍然生效。
+# content_unit 从 535 涨到 538：2026-11-11 用 database/etl/merge_book_and_import_chapter1.py
+# 补进了原先整章丢失的第一章（3 个 theory 单元，ref_type='node'，带 1024 维向量）。
 EXPECT = {
     "formula": 245,
     "case_record": 290,
     "classic_quote": 568,
-    "content_unit": 535,
+    "content_unit": 538,
     "formula_herb": 1315,
 }
 
@@ -50,7 +52,7 @@ def main():
             "(SELECT vector_dims(embedding) FROM content_unit WHERE embedding IS NOT NULL LIMIT 1) "
             "FROM content_unit"
         )[0]
-        check("PG: 向量 535 条", with_vec == 535, f"got {with_vec}")
+        check("PG: 向量 538 条", with_vec == 538, f"got {with_vec}")
         check("PG: 向量 1024 维", dims == 1024, f"got {dims}")
     except Exception as e:  # noqa: BLE001
         check("PG 向量可查", False, str(e))
