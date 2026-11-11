@@ -129,7 +129,7 @@ type SearchType = 'all' | 'formula' | 'case' | 'quote'
 
 const SYMPTOMS = ['无汗', '恶风', '脉浮紧', '发热', '项背强']
 const HERBS = ['麻黄', '桂枝', '杏仁', '葛根']
-const FALLBACK_BOOKS = ['伤寒论', '温病学', '金匮要略']
+
 const TYPE_OPTIONS: Array<{ value: SearchType; label: string }> = [
   { value: 'all', label: '全部' },
   { value: 'formula', label: '方剂' },
@@ -166,9 +166,12 @@ const bookOptions = computed<Array<Pick<Book, 'id' | 'title' | 'unitCount'>>>(()
   if (books.value.length) {
     return books.value.map((b) => ({ id: b.id, title: b.title, unitCount: b.unitCount }))
   }
-  const keys = Object.keys(facets.value?.books ?? {})
-  const titles = keys.length ? keys : FALLBACK_BOOKS
-  return titles.map((t, i) => ({ id: `bk_${i + 1}`, title: t, unitCount: undefined }))
+  // 兜底只来自真实分面；不再写死「伤寒论 / 温病学 / 金匮要略」——那三本书在语料合并后已不存在
+  return Object.keys(facets.value?.books ?? {}).map((t, i) => ({
+    id: `bk_${i + 1}`,
+    title: t,
+    unitCount: undefined
+  }))
 })
 
 async function loadFacets() {

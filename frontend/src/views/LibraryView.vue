@@ -2,7 +2,7 @@
   <div class="crumb"><RouterLink to="/">首页</RouterLink> / 典籍</div>
   <h1 class="serif" style="margin-bottom:6px">典籍浏览</h1>
   <p class="muted" style="margin-bottom:14px">
-    按 章 → 节 → 类 → 单元 的层级阅读，仿古籍目录。可切换不同语料（书架）。
+    按 章 → 节 → 类 → 单元 的层级阅读，仿古籍目录。点左侧任一节点，右侧就地显示内容，可用 ←/→ 翻页。
   </p>
 
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px">
@@ -11,8 +11,6 @@
         v-for="b in bookTabs"
         :key="b.id"
         :class="{ active: bookId === b.id }"
-        :disabled="b.disabled"
-        :style="b.disabled ? 'opacity:.5;cursor:not-allowed' : ''"
         @click="switchBook(b)"
       >{{ b.label }}</button>
     </span>
@@ -23,7 +21,7 @@
 
   <div class="grid" style="grid-template-columns:300px 1fr">
     <!-- 目录树 -->
-    <aside class="card" style="align-self:start">
+    <aside class="card" style="align-self:start;max-height:74vh;overflow:auto">
       <h3 style="margin-bottom:12px">
         目录 ·
         <span class="muted" style="font-weight:400;font-size:13px">{{ curBookTitle }}</span>
@@ -32,95 +30,119 @@
       <div v-if="loading" class="muted">加载中…</div>
 
       <template v-else>
-        <details v-for="ch in tree" :key="ch.id" open style="margin-bottom:6px">
-          <summary style="cursor:pointer;font-weight:700;font-size:14.5px">{{ ch.title }}</summary>
-          <details v-for="s in ch.children" :key="s.id" style="margin:6px 0 0 8px">
-            <summary style="cursor:pointer;font-size:14px;color:#374151">{{ s.title }}</summary>
-            <div
+        <div v-for="ch in tree" :key="ch.id" class="node-ch">
+          <button class="node-btn lvl-1" :class="{ on: isOn(ch.id) }" @click="selectNode(ch.id)">
+            {{ ch.title }}
+          </button>
+          <div v-for="s in ch.children" :key="s.id">
+            <button class="node-btn lvl-2" :class="{ on: isOn(s.id) }" @click="selectNode(s.id)">
+              {{ s.title }}
+            </button>
+            <button
               v-for="c in s.children"
               :key="c.id"
-              class="rowitem"
-              style="padding:8px 10px;margin-top:6px;cursor:pointer"
-              @click="openNode(c)"
-            >{{ c.title }}</div>
-          </details>
-        </details>
+              class="node-btn lvl-3"
+              :class="{ on: isOn(c.id) }"
+              @click="selectNode(c.id)"
+            >{{ c.title }}</button>
+          </div>
+        </div>
         <p v-if="!tree.length" class="muted">该语料暂无目录数据。</p>
       </template>
     </aside>
 
-    <!-- 内容区 -->
+    <!-- 内容区：内嵌节点详情 + 上一节 / 下一节 -->
     <section>
       <div class="card">
-        <div class="crumb">
-          <RouterLink to="/library">典籍</RouterLink> / {{ curBookTitle }}
-        </div>
-        <h2 class="serif" style="margin-bottom:6px">{{ selected?.title || '—' }}</h2>
-        <p class="muted" style="margin-bottom:16px">
-          {{ selected ? `该节点下共 ${selected.children.length} 个子单元。` : '请在左侧目录中选择一个节点。' }}
-        </p>
-        <div v-if="selected" style="margin-bottom:14px">
-          <RouterLink class="btn primary sm" :to="`/node/${selected.id}`">打开节点详情 →</RouterLink>
+        <div class="crumb"><RouterLink to="/">首页</RouterLink> / 典籍 / {{ curBookTitle }}</div>
+
+        <div class="lib-nav">
+          <button class="btn ghost sm" :disabled="!prevNode" @click="step(-1)">← 上一节</button>
+          <span class="muted" style="font-size:12px">{{ posLabel }}</span>
+          <button class="btn ghost sm" :disabled="!nextNode" @click="step(1)">下一节 →</button>
+          <span style="flex:1"></span>
+          <RouterLink v-if="selectedId" class="chip clickable" :to="`/node/${selectedId}`">
+            独立页打开 ↗
+          </RouterLink>
         </div>
 
-        <div v-if="selected && selected.children.length" class="grid cols-2 stagger">
-          <a
-            v-for="c in selected.children"
-            :key="c.id"
-            class="rowitem"
-            @click="openNode(c)"
-          >
-            <span class="thumb">{{ c.title.slice(0, 1) }}</span>
-            <div>
-              <b>{{ c.title }}</b>
-              <div class="muted">{{ nodeTypeLabel(c.nodeType) }}</div>
-            </div>
-          </a>
-        </div>
-        <p v-else class="muted">（叶子节点：进入节点详情页查看其下方剂 / 医案 / 条文）</p>
+        <NodeDetail v-if="selectedId" :id="selectedId" embedded @open="selectNode" />
+        <p v-else class="muted" style="margin-top:12px">请在左侧目录中选择一个节点。</p>
       </div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { getLibraryTree, type BookTreeNode } from '@/api/catalog'
-import { toast } from '@/utils/toast'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { getLibraryTree, type BookTreeNode } from '@/api/catalog'
+import NodeDetail from '@/components/NodeDetail.vue'
+import { useBooks } from '@/composables/useBooks'
+import { toast } from '@/utils/toast'
 
 const router = useRouter()
 const route = useRoute()
 
-const bookTabs = [
-  { id: 'bk_1', label: '伤寒论', disabled: false },
-  { id: 'bk_2', label: '温病学', disabled: false },
-  { id: 'bk_3', label: '金匮要略', disabled: false }
-]
+// tab 由后端书单驱动（composables/useBooks.ts）：合并语料后只有一本，就只显示一个 tab，
+// 不会出现硬编码的「伤寒论 / 温病学 / 金匮要略」
+const { books, defaultBookId, titleOf, loadBooks } = useBooks()
+const bookTabs = computed(() => books.value.map((b) => ({ id: b.id, label: b.title })))
 
-const bookId = ref(String(route.query.bookId ?? 'bk_1'))
+const bookId = ref(String(route.query.bookId ?? ''))
 const tree = ref<BookTreeNode[]>([])
-const selected = ref<BookTreeNode | null>(null)
 const loading = ref(false)
 const error = ref('')
 
-const curBookTitle = computed(
-  () => bookTabs.find((b) => b.id === bookId.value)?.label ?? bookId.value
+const curBookTitle = computed(() => titleOf(bookId.value))
+
+/** 当前节点：用 id 而不是节点对象，方便和 URL 的 ?node= 双向同步 */
+const selectedId = ref(String(route.query.node ?? ''))
+
+/** 章 → 节 → 类 展平成阅读顺序，供"上一节 / 下一节"和位置提示使用 */
+const flat = computed(() => {
+  const list: BookTreeNode[] = []
+  for (const chapter of tree.value) {
+    list.push(chapter)
+    for (const section of chapter.children ?? []) {
+      list.push(section)
+      for (const category of section.children ?? []) list.push(category)
+    }
+  }
+  return list
+})
+
+const idx = computed(() => flat.value.findIndex((n) => n.id === selectedId.value))
+const prevNode = computed(() => (idx.value > 0 ? flat.value[idx.value - 1] : null))
+const nextNode = computed(() =>
+  idx.value >= 0 && idx.value < flat.value.length - 1 ? flat.value[idx.value + 1] : null
+)
+const posLabel = computed(() =>
+  idx.value >= 0 ? `${idx.value + 1} / ${flat.value.length}` : '—'
 )
 
-const NODE_TYPE_LABEL: Record<string, string> = {
-  chapter: '章',
-  section: '节',
-  category: '类方证',
-  unit: '单元'
+function isOn(id: string) {
+  return selectedId.value === id
 }
 
-function nodeTypeLabel(t: string) {
-  return NODE_TYPE_LABEL[t] ?? t
+function selectNode(id: string) {
+  if (!id) return
+  selectedId.value = id
+  // 写进 URL：刷新不丢，也可以把"读到哪一节"的链接发给别人
+  router.replace({ query: { ...route.query, bookId: bookId.value, node: id } })
 }
 
-function openNode(n: BookTreeNode) {
-  router.push(`/node/${n.id}`)
+function step(delta: number) {
+  const target = delta < 0 ? prevNode.value : nextNode.value
+  if (target) selectNode(target.id)
+}
+
+function onKey(e: KeyboardEvent) {
+  const el = e.target as HTMLElement | null
+  // 正在输入框里打字时不要抢方向键
+  if (el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) return
+  if (e.key === 'ArrowLeft') step(-1)
+  if (e.key === 'ArrowRight') step(1)
 }
 
 async function load() {
@@ -128,7 +150,10 @@ async function load() {
   error.value = ''
   try {
     tree.value = await getLibraryTree(bookId.value)
-    selected.value = tree.value[0]?.children?.[0] ?? tree.value[0] ?? null
+    // URL 里带的 node 不在这本书里（比如换了语料）→ 退回到第一个节点
+    if (!flat.value.some((n) => n.id === selectedId.value)) {
+      selectNode(flat.value[0]?.id ?? '')
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : '加载失败'
     tree.value = []
@@ -137,12 +162,75 @@ async function load() {
   }
 }
 
-function switchBook(b: { id: string; label: string; disabled: boolean }) {
-  if (b.disabled) return
+async function switchBook(b: { id: string; label: string }) {
+  if (b.id === bookId.value) return
   bookId.value = b.id
+  selectedId.value = ''
   toast(`已切换到：${b.label}`)
-  load()
+  await load()
 }
 
-onMounted(load)
+onMounted(async () => {
+  await loadBooks()
+  if (!bookId.value) bookId.value = defaultBookId.value || 'bk_1'
+  await load()
+  window.addEventListener('keydown', onKey)
+})
+
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
+
+<style scoped>
+.lib-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 10px 0 16px;
+}
+
+.node-ch {
+  margin-bottom: 10px;
+}
+
+.node-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  line-height: 1.45;
+  color: inherit;
+  font: inherit;
+}
+
+.node-btn:hover {
+  background: rgba(0, 0, 0, 0.045);
+}
+
+.node-btn.on {
+  background: rgba(47, 106, 79, 0.12);
+  color: #2f6a4f;
+  font-weight: 700;
+}
+
+.lvl-1 {
+  font-weight: 700;
+  font-size: 14.5px;
+  padding: 5px 6px;
+}
+
+.lvl-2 {
+  font-size: 13.5px;
+  padding: 4px 6px 4px 16px;
+  color: #374151;
+}
+
+.lvl-3 {
+  font-size: 13px;
+  padding: 4px 6px 4px 28px;
+  color: #6b7280;
+}
+</style>
