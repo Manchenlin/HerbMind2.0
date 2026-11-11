@@ -23,6 +23,8 @@ herbmind:
   svc-catalog-url: http://localhost:8082
   svc-search-url: http://localhost:8083
   svc-insight-url: http://localhost:8086
+  # 域3（智能）：图谱转发，见 09 契约 §15.6 步骤 2
+  svc-graph-url: http://localhost:8085
 
 logging:
   level:

@@ -1,0 +1,71 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - link "H HerbMind 本草心智" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e6]: H
+        - text: HerbMind 本草心智
+      - navigation [ref=e7]:
+        - link "首页" [ref=e8] [cursor=pointer]:
+          - /url: /
+        - link "书架" [ref=e9] [cursor=pointer]:
+          - /url: /shelf
+        - link "典籍" [ref=e10] [cursor=pointer]:
+          - /url: /library
+        - link "检索" [ref=e11] [cursor=pointer]:
+          - /url: /search
+        - link "练习" [ref=e12] [cursor=pointer]:
+          - /url: /train
+        - link "图谱" [ref=e13] [cursor=pointer]:
+          - /url: /graph
+        - link "智能问答" [ref=e14] [cursor=pointer]:
+          - /url: /ask
+        - link "我的" [ref=e15] [cursor=pointer]:
+          - /url: /me
+      - combobox "切换语料（插拔式）" [ref=e16] [cursor=pointer]:
+        - option "★ 伤寒论" [selected]
+        - option "温病学"
+        - option "金匮要略"
+      - link "登录 / 注册" [ref=e17] [cursor=pointer]:
+        - /url: /login
+  - main [ref=e18]:
+    - generic [ref=e19]:
+      - link "首页" [ref=e20] [cursor=pointer]:
+        - /url: /
+      - text: / 图谱
+    - generic [ref=e21]:
+      - generic [ref=e22]:
+        - heading "知识图谱探索" [level=1] [ref=e23]
+        - paragraph [ref=e24]: 以「麻黄汤」为中心的 1 跳邻居 · 节点 0 个 / 关系 0 条
+      - link "方证相似度地图 →" [ref=e25] [cursor=pointer]:
+        - /url: /graph/map
+    - generic [ref=e26]:
+      - textbox "输入方名 / 药名 / ID，如 麻黄汤、桂枝、f_1、h_麻黄" [ref=e27]: 麻黄汤
+      - button "查询中…" [disabled] [ref=e28] [cursor=pointer]
+      - button "麻黄汤" [ref=e29] [cursor=pointer]
+      - button "桂枝汤" [ref=e30] [cursor=pointer]
+      - button "葛根汤" [ref=e31] [cursor=pointer]
+      - button "麻黄" [ref=e32] [cursor=pointer]
+      - button "桂枝" [ref=e33] [cursor=pointer]
+    - generic [ref=e34]:
+      - generic [ref=e35]: 显示：
+      - button "方剂" [ref=e36] [cursor=pointer]
+      - button "药味" [ref=e37] [cursor=pointer]
+    - generic [ref=e39]:
+      - img "知识图谱子图" [ref=e40]
+      - paragraph [ref=e41]: 该子图没有节点。
+    - paragraph [ref=e42]: 数据来源：svc-graph → Neo4j（节点 0 个邻居，含中心）。 点击节点查看详情；悬停高亮其邻居。
+    - dialog [ref=e43]:
+      - generic [ref=e45]:
+        - heading [level=3]
+        - button "关闭" [ref=e46] [cursor=pointer]
+  - contentinfo [ref=e48]:
+    - text: HerbMind v2 · 视觉基线沿用 prototype/assets/theme.css ·
+    - link "我的" [ref=e49] [cursor=pointer]:
+      - /url: /me
+    - text: ·
+    - link "收藏笔记" [ref=e50] [cursor=pointer]:
+      - /url: /me/favorites
+    - text: ·
+    - link "治理后台" [ref=e51] [cursor=pointer]:
+      - /url: /admin

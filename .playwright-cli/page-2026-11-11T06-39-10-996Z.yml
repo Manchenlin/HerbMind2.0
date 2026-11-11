@@ -1,0 +1,65 @@
+- generic [ref=f6e2]:
+  - banner [ref=f6e3]:
+    - generic [ref=f6e4]:
+      - link "H HerbMind 本草心智" [ref=f6e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f6e6]: H
+        - text: HerbMind 本草心智
+      - navigation [ref=f6e7]:
+        - link "首页" [ref=f6e8] [cursor=pointer]:
+          - /url: /
+        - link "书架" [ref=f6e9] [cursor=pointer]:
+          - /url: /shelf
+        - link "典籍" [ref=f6e10] [cursor=pointer]:
+          - /url: /library
+        - link "检索" [ref=f6e11] [cursor=pointer]:
+          - /url: /search
+        - link "练习" [ref=f6e12] [cursor=pointer]:
+          - /url: /train
+        - link "图谱" [ref=f6e13] [cursor=pointer]:
+          - /url: /graph
+        - link "智能问答" [ref=f6e14] [cursor=pointer]:
+          - /url: /ask
+        - link "我的" [ref=f6e15] [cursor=pointer]:
+          - /url: /me
+      - combobox "切换语料（插拔式）" [ref=f6e16] [cursor=pointer]:
+        - option "★ 伤寒论" [selected]
+        - option "温病学"
+        - option "金匮要略"
+      - link "登录 / 注册" [ref=f6e17] [cursor=pointer]:
+        - /url: /login
+  - main [ref=f6e18]:
+    - generic [ref=f6e19]:
+      - link "首页" [ref=f6e20] [cursor=pointer]:
+        - /url: /
+      - text: /
+      - link "图谱" [ref=f6e21] [cursor=pointer]:
+        - /url: /graph
+      - text: / 相似度地图
+    - generic [ref=f6e22]:
+      - generic [ref=f6e23]:
+        - heading "方证相似度地图" [level=1] [ref=f6e24]
+        - paragraph [ref=f6e25]: 全部方剂按药味组成重合度（Jaccard）降维投影到 2D：距离越近，共用药味越多。 当前 0 首方 · 0 个分组
+      - generic [ref=f6e26]:
+        - combobox [ref=f6e27]:
+          - option "60 首"
+          - option "150 首" [selected]
+          - option "250 首"
+        - link "← 返回图谱" [ref=f6e28] [cursor=pointer]:
+          - /url: /graph
+    - generic [ref=f6e29]: 正在计算 150 首方的药味重合度与二维坐标…
+    - paragraph [ref=f6e30]: 悬停查看方名，点击查看详情。坐标为服务端确定性计算（PCoA 降维）， 同一版本 version=— 反复请求会得到同一张图，可复现、可截图。 分组仅按药味重合度切分，不代表证型、功效或任何医学分类。 本图共 0 个分组，多数只有 1~2 首方；一组一色会让图例比图还长， 因此只给规模 ≥ 3 首的 0 组上色，其余统一灰色。
+    - dialog [ref=f6e31]:
+      - generic [ref=f6e33]:
+        - heading [level=3]
+        - button "关闭" [ref=f6e34] [cursor=pointer]
+  - contentinfo [ref=f6e36]:
+    - text: HerbMind v2 · 视觉基线沿用 prototype/assets/theme.css ·
+    - link "我的" [ref=f6e37] [cursor=pointer]:
+      - /url: /me
+    - text: ·
+    - link "收藏笔记" [ref=f6e38] [cursor=pointer]:
+      - /url: /me/favorites
+    - text: ·
+    - link "治理后台" [ref=f6e39] [cursor=pointer]:
+      - /url: /admin

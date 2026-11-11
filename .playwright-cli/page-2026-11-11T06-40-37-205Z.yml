@@ -1,0 +1,63 @@
+- generic [ref=f9e2]:
+  - banner [ref=f9e3]:
+    - generic [ref=f9e4]:
+      - link "H HerbMind 本草心智" [ref=f9e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f9e6]: H
+        - text: HerbMind 本草心智
+      - navigation [ref=f9e7]:
+        - link "首页" [ref=f9e8] [cursor=pointer]:
+          - /url: /
+        - link "书架" [ref=f9e9] [cursor=pointer]:
+          - /url: /shelf
+        - link "典籍" [ref=f9e10] [cursor=pointer]:
+          - /url: /library
+        - link "检索" [ref=f9e11] [cursor=pointer]:
+          - /url: /search
+        - link "练习" [ref=f9e12] [cursor=pointer]:
+          - /url: /train
+        - link "图谱" [ref=f9e13] [cursor=pointer]:
+          - /url: /graph
+        - link "智能问答" [ref=f9e14] [cursor=pointer]:
+          - /url: /ask
+        - link "我的" [ref=f9e15] [cursor=pointer]:
+          - /url: /me
+      - combobox "切换语料（插拔式）" [ref=f9e16] [cursor=pointer]:
+        - option "★ 伤寒论" [selected]
+        - option "温病学"
+        - option "金匮要略"
+      - link "d demo" [ref=f9e17] [cursor=pointer]:
+        - /url: /me
+        - generic [ref=f9e18]: d
+        - generic [ref=f9e19]: demo
+  - main [ref=f9e20]:
+    - generic [ref=f9e21]:
+      - link "首页" [ref=f9e22] [cursor=pointer]:
+        - /url: /
+      - text: /
+      - link "图谱" [ref=f9e23] [cursor=pointer]:
+        - /url: /graph
+      - text: / 方心子图
+    - generic [ref=f9e24]:
+      - generic [ref=f9e25]:
+        - heading "查询中… 方心子图" [level=1] [ref=f9e26]:
+          - text: 查询中…
+          - generic [ref=f9e27]: 方心子图
+        - paragraph [ref=f9e28]: 以本方为中心：药味 0 味 · 组成相近的方 0 首
+      - link "← 返回图谱" [ref=f9e29] [cursor=pointer]:
+        - /url: /graph
+    - generic [ref=f9e30]: 正在加载方剂「f_1」…
+    - dialog [ref=f9e31]:
+      - generic [ref=f9e33]:
+        - heading [level=3]
+        - button "关闭" [ref=f9e34] [cursor=pointer]
+  - contentinfo [ref=f9e36]:
+    - text: HerbMind v2 · 视觉基线沿用 prototype/assets/theme.css ·
+    - link "我的" [ref=f9e37] [cursor=pointer]:
+      - /url: /me
+    - text: ·
+    - link "收藏笔记" [ref=f9e38] [cursor=pointer]:
+      - /url: /me/favorites
+    - text: ·
+    - link "治理后台" [ref=f9e39] [cursor=pointer]:
+      - /url: /admin

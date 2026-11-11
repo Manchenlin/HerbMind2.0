@@ -1,0 +1,43 @@
+- generic [ref=f8e2]:
+  - banner [ref=f8e3]:
+    - generic [ref=f8e4]:
+      - link "H HerbMind 本草心智" [ref=f8e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f8e6]: H
+        - text: HerbMind 本草心智
+      - navigation [ref=f8e7]:
+        - link "首页" [ref=f8e8] [cursor=pointer]:
+          - /url: /
+        - link "书架" [ref=f8e9] [cursor=pointer]:
+          - /url: /shelf
+        - link "典籍" [ref=f8e10] [cursor=pointer]:
+          - /url: /library
+        - link "检索" [ref=f8e11] [cursor=pointer]:
+          - /url: /search
+        - link "练习" [ref=f8e12] [cursor=pointer]:
+          - /url: /train
+        - link "图谱" [ref=f8e13] [cursor=pointer]:
+          - /url: /graph
+        - link "智能问答" [ref=f8e14] [cursor=pointer]:
+          - /url: /ask
+        - link "我的" [ref=f8e15] [cursor=pointer]:
+          - /url: /me
+      - combobox "切换语料（插拔式）" [ref=f8e16] [cursor=pointer]:
+        - option "★ 伤寒论" [selected]
+        - option "温病学"
+        - option "金匮要略"
+      - link "d demo" [ref=f8e17] [cursor=pointer]:
+        - /url: /me
+        - generic [ref=f8e18]: d
+        - generic [ref=f8e19]: demo
+  - main [ref=f8e20]
+  - contentinfo [ref=f8e21]:
+    - text: HerbMind v2 · 视觉基线沿用 prototype/assets/theme.css ·
+    - link "我的" [ref=f8e22] [cursor=pointer]:
+      - /url: /me
+    - text: ·
+    - link "收藏笔记" [ref=f8e23] [cursor=pointer]:
+      - /url: /me/favorites
+    - text: ·
+    - link "治理后台" [ref=f8e24] [cursor=pointer]:
+      - /url: /admin
