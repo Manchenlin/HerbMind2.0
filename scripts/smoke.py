@@ -15,14 +15,16 @@ from db import neo4j_driver, query  # noqa: E402
 BFF = os.getenv("BFF_BASE", "http://localhost:8090")
 FAIL = False
 
-# 正式数据基线（来自 migrate_legacy + 2026-10-26 补录）
+# 正式数据基线（来自 migrate_legacy + 2026-10-26 补录 + 2026-11-11 docx 正文补录）
 # formula_herb 从 1006 涨到 1315：2026-10-26 用 database/etl/apply_supplement.py 补了 309 条组成，
 # 补录输入见 database/etl/data/formula_herb_supplement.csv。改这条基线前先确认补录是否仍然生效。
+# content_unit 从 538 涨到 598：2026-11-11 用 database/etl/import_docx_gap.py 补了 58 条节级概述
+# （section_abstract）+ 2 条方证比较表（table），见 data 目录说明与本机 memory/03。
 EXPECT = {
     "formula": 245,
     "case_record": 290,
     "classic_quote": 568,
-    "content_unit": 535,
+    "content_unit": 598,
     "formula_herb": 1315,
 }
 
@@ -45,12 +47,12 @@ def main():
 
     # 2) 向量（全部非空、1024 维）
     try:
-        with_vec, dims = query(
-            "SELECT count(*) FILTER (WHERE embedding IS NOT NULL), "
+        with_vec, total, dims = query(
+            "SELECT count(*) FILTER (WHERE embedding IS NOT NULL), count(*), "
             "(SELECT vector_dims(embedding) FROM content_unit WHERE embedding IS NOT NULL LIMIT 1) "
             "FROM content_unit"
         )[0]
-        check("PG: 向量 535 条", with_vec == 535, f"got {with_vec}")
+        check("PG: 向量覆盖全部单元", with_vec == total, f"got {with_vec}/{total}")
         check("PG: 向量 1024 维", dims == 1024, f"got {dims}")
     except Exception as e:  # noqa: BLE001
         check("PG 向量可查", False, str(e))
