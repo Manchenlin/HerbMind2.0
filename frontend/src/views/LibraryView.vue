@@ -34,6 +34,9 @@
           <button class="node-btn lvl-1" :class="{ on: isOn(ch.id) }" @click="selectNode(ch.id)">
             {{ ch.title }}
           </button>
+          <!-- 章节编号断层时给个占位：第四章第一节「脏腑经络先后病脉证」原文几乎为空，ETL 没建节点，
+               直接跳过会让人以为目录错了 -->
+          <button v-if="hasGap(ch)" class="node-btn lvl-2 gap" disabled>第一节（原文缺失）</button>
           <div v-for="s in ch.children" :key="s.id">
             <button class="node-btn lvl-2" :class="{ on: isOn(s.id) }" @click="selectNode(s.id)">
               {{ s.title }}
@@ -123,6 +126,12 @@ const posLabel = computed(() =>
 
 function isOn(id: string) {
   return selectedId.value === id
+}
+
+/** 章下第一"节"不是第一节 → 说明前面的节没进库，显示占位而不是静默跳过 */
+function hasGap(chapter: BookTreeNode): boolean {
+  const first = chapter.children?.[0]
+  return !!first && !first.title.startsWith('第一节')
 }
 
 function selectNode(id: string) {
@@ -232,5 +241,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   font-size: 13px;
   padding: 4px 6px 4px 28px;
   color: #6b7280;
+}
+
+.gap {
+  opacity: 0.5;
+  cursor: default;
+  font-style: italic;
+}
+
+.gap:hover {
+  background: transparent;
 }
 </style>

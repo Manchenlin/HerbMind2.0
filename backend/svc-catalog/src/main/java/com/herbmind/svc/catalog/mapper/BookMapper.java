@@ -1,6 +1,7 @@
 package com.herbmind.svc.catalog.mapper;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -41,4 +42,31 @@ public interface BookMapper extends BaseMapper<Book> {
 
     @Select("SELECT id FROM book ORDER BY id")
     List<String> allBookIds();
+
+    /**
+     * 取某目录节点子树下的全部单元正文，按原书页序排列。
+     *
+     * <p>三路来源：方剂单元、医案单元（医案本身没有 node_id，靠主治方剂挂到节点上）、
+     * 理论单元（第一章那 3 节，ref_type='node'）。
+     * 排序用 `meta_jsonb->>'page'` 里的起始页码（形如「第19-22页」取 19），无页码的排最后。
+     *
+     * <p>三个 id 列表调用方必须保证非空（空列表会生成 `IN ()` 语法错误），服务层用哨兵值兜住。
+     */
+    @Select("<script>"
+            + "SELECT u.id AS id, u.ref_type AS ref_type, u.ref_id AS ref_id, u.title AS title,"
+            + " u.unit_type AS unit_type, coalesce(u.meta_jsonb->>'page', '') AS page,"
+            + " u.content AS content"
+            + " FROM content_unit u"
+            + " WHERE (u.ref_type = 'formula' AND u.ref_id IN "
+            + "<foreach collection='formulaIds' item='x' open='(' separator=',' close=')'>#{x}</foreach>)"
+            + " OR (u.ref_type = 'case' AND u.ref_id IN "
+            + "<foreach collection='caseIds' item='x' open='(' separator=',' close=')'>#{x}</foreach>)"
+            + " OR (u.ref_type = 'node' AND u.ref_id IN "
+            + "<foreach collection='nodeIds' item='x' open='(' separator=',' close=')'>#{x}</foreach>)"
+            + " ORDER BY coalesce(nullif(regexp_replace(coalesce(u.meta_jsonb->>'page', ''),"
+            + " '^第([0-9]+).*$', '\\1'), '')::int, 999999), u.id"
+            + "</script>")
+    List<Map<String, Object>> unitsOfNode(@Param("formulaIds") List<String> formulaIds,
+            @Param("caseIds") List<String> caseIds,
+            @Param("nodeIds") List<String> nodeIds);
 }

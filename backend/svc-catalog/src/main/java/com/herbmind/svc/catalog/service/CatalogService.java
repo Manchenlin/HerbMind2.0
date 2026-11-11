@@ -33,11 +33,13 @@ import com.herbmind.contract.catalog.HerbVO;
 import com.herbmind.contract.catalog.ImportRequest;
 import com.herbmind.contract.catalog.ImportStatusVO;
 import com.herbmind.contract.catalog.LinkVO;
+import com.herbmind.contract.catalog.NodeContentVO;
 import com.herbmind.contract.catalog.NodeDetailVO;
 import com.herbmind.contract.catalog.QuoteItemVO;
 import com.herbmind.contract.catalog.QuoteListVO;
 import com.herbmind.contract.catalog.QuoteRefVO;
 import com.herbmind.contract.catalog.QuoteVO;
+import com.herbmind.contract.catalog.UnitTextVO;
 import com.herbmind.svc.catalog.entity.Book;
 import com.herbmind.svc.catalog.entity.BookNode;
 import com.herbmind.svc.catalog.entity.CaseRecord;
@@ -168,6 +170,51 @@ public class CatalogService {
                 cases,
                 quotes,
                 kids.size());
+    }
+
+    /**
+     * 节点子树下的全部单元正文，按原书页序。
+     *
+     * <p>前端"典籍阅读"用它把一节的内容按原书版面铺开（方剂正文、医案叙述、理论节选连排），
+     * 而不是只给几张方剂/医案摘要卡片。
+     */
+    public NodeContentVO nodeContent(String id) {
+        BookNode node = nodeMapper.selectById(id);
+        if (node == null) {
+            throw new IllegalArgumentException("节点不存在: " + id);
+        }
+        Book book = bookMapper.selectById(node.getBookId());
+        List<BookNode> all = nodesOfBook(node.getBookId());
+        Set<String> subtree = subtreeIds(node.getId(), all);
+
+        List<String> formulaIds = formulasByNodeIds(subtree).stream().map(Formula::getId).toList();
+        List<String> caseIds = formulaIds.isEmpty()
+                ? List.of()
+                : caseMapper.selectList(new QueryWrapper<CaseRecord>().in("main_formula_id", formulaIds))
+                        .stream().map(CaseRecord::getId).toList();
+
+        List<Map<String, Object>> rows = bookMapper.unitsOfNode(
+                orSentinel(formulaIds), orSentinel(caseIds), orSentinel(new ArrayList<>(subtree)));
+
+        List<UnitTextVO> units = rows.stream()
+                .map(r -> new UnitTextVO(
+                        text(r, "id"), text(r, "ref_type"), text(r, "ref_id"),
+                        text(r, "title"), text(r, "unit_type"), text(r, "page"),
+                        text(r, "content")))
+                .toList();
+
+        return new NodeContentVO(node.getId(), node.getTitle(), node.getBookId(),
+                book == null ? null : book.getTitle(), units);
+    }
+
+    /** MyBatis 的 foreach 遇到空集合会生成 `IN ()` 语法错误，这里塞一个不可能命中的哨兵值。 */
+    private static List<String> orSentinel(List<String> ids) {
+        return ids == null || ids.isEmpty() ? List.of("\u0000none") : ids;
+    }
+
+    private static String text(Map<String, Object> row, String key) {
+        Object v = row.get(key);
+        return v == null ? "" : v.toString();
     }
 
     // ==================== 方剂 / 医案 / 条文 ====================
