@@ -75,7 +75,7 @@
                 <div>
                   <div class="snip">{{ c.snippet }}</div>
                   <div class="pg">
-                    {{ c.title || c.refId }} · {{ c.refType === 'formula' ? '方剂' : '医案' }} ·
+                    {{ c.title || c.refId }} · {{ typeLabel(c.refType) }} ·
                     相似度 {{ (c.score * 100).toFixed(0) }}% ·
                     <RouterLink :to="srcLink(c)">看原文 ↗</RouterLink>
                   </div>
@@ -342,8 +342,16 @@ function short(name: string, n: number) {
   return name.length > n ? `${name.slice(0, n)}…` : name
 }
 
+// 条文（quote）与理论章节（node）也必须各自能跳转，不能一律当医案
+const TYPE_LABEL: Record<string, string> = { formula: '方剂', case: '医案', quote: '条文', node: '理论' }
+const TYPE_PATH: Record<string, string> = { formula: 'formula', case: 'case', quote: 'quote', node: 'node' }
+
+function typeLabel(refType: string) {
+  return TYPE_LABEL[refType] ?? refType
+}
+
 function srcLink(c: Citation) {
-  return c.refType === 'formula' ? `/formula/${c.refId}` : `/case/${c.refId}`
+  return `/${TYPE_PATH[c.refType] ?? 'case'}/${c.refId}`
 }
 
 function coach() {

@@ -112,3 +112,31 @@ def test_degraded_answer_lists_materials_and_no_invented_content() -> None:
     assert "[1] 方剂·麻黄汤：" in text
     assert "稍后重试" in text
     assert "功效" not in text and "主治" not in text  # 不替用户推断
+
+
+# ==================== 理论单元（章节正文） ====================
+
+
+def test_build_materials_truncates_long_node_content() -> None:
+    """理论单元动辄 5000+ 字，进提示词必须截断，并明确告诉模型「以上为节选」。"""
+    long_text = "经" * (context.NODE_CONTENT_LIMIT + 500)
+    units = [
+        make_unit(id="cu_th1", ref_type="node", title="第一节 中医经典的作用", content=long_text)
+    ]
+
+    text = context.build_materials(units)
+
+    assert "（理论：第一节 中医经典的作用）" in text
+    assert "以上为节选" in text
+    # 截断后总长不该再随原文膨胀
+    assert len(text) < context.NODE_CONTENT_LIMIT + 200
+
+
+def test_build_materials_keeps_short_node_content_intact() -> None:
+    """短的理论单元不截断、不加「节选」标记，避免误导模型以为资料不全。"""
+    units = [make_unit(id="cu_th2", ref_type="node", title="第二节 证治分类的意义", content="很短的正文")]
+
+    text = context.build_materials(units)
+
+    assert "很短的正文" in text
+    assert "以上为节选" not in text

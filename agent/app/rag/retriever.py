@@ -44,7 +44,9 @@ class RetrievedUnit:
     @property
     def kind_label(self) -> str:
         """给提示词用的中文类型名。"""
-        return {"formula": "方剂", "case": "医案", "quote": "条文"}.get(self.ref_type, self.ref_type)
+        return {"formula": "方剂", "case": "医案", "quote": "条文", "node": "理论"}.get(
+            self.ref_type, self.ref_type
+        )
 
     def snippet(self, limit: int = SNIPPET_LEN) -> str:
         """取正文前若干字做预览（去掉换行，前端好排版）。"""
@@ -149,27 +151,30 @@ async def retrieve(
         formula_k = max(1, math.ceil(limit * FORMULA_RATIO))
         # 注意用 0 兜底而不是 1：limit=1 时只应召回 1 条，不能强塞一条医案
         case_k = max(0, limit - formula_k)
+        # 理论单元（章/节正文）走**独立的第三路**，在 formula+case 配额之外追加：
+        # 混进原有比例会破坏"问方必有方"。它的篇幅远大于方剂/医案，条数由配置兜住。
+        theory_k = max(0, min(s.retrieval_theory_top_k, limit))
+
+        tasks = [asyncio.to_thread(_query, "formula", formula_k)]
         if case_k:
-            rows_f, rows_c = await asyncio.gather(
-                asyncio.to_thread(_query, "formula", formula_k),
-                asyncio.to_thread(_query, "case", case_k),
-            )
-        else:
-            rows_f = await asyncio.to_thread(_query, "formula", formula_k)
-            rows_c = []
-        units = _to_units(rows_f) + _to_units(rows_c)
+            tasks.append(asyncio.to_thread(_query, "case", case_k))
+        if theory_k:
+            tasks.append(asyncio.to_thread(_query, "node", theory_k))
+        groups = await asyncio.gather(*tasks)
+        units = [u for rows in groups for u in _to_units(rows)]
         units.sort(key=lambda u: u.score, reverse=True)
 
     kept = [u for u in units if u.score >= threshold]
     logger.info(
-        "检索『%s』配额=%s 阈值=%.2f → 保留 %d/%d 条（方剂 %d、医案 %d，最高分 %.3f）",
+        "检索『%s』配额=%s 阈值=%.2f → 保留 %d/%d 条（方剂 %d、医案 %d、理论 %d，最高分 %.3f）",
         question[:24],
-        "单路:" + ref_type if ref_type else "formula+case",
+        "单路:" + ref_type if ref_type else "formula+case+node",
         threshold,
         len(kept),
         len(units),
         sum(1 for u in kept if u.ref_type == "formula"),
         sum(1 for u in kept if u.ref_type == "case"),
+        sum(1 for u in kept if u.ref_type == "node"),
         units[0].score if units else 0.0,
     )
     return kept

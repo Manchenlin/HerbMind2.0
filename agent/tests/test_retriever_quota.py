@@ -94,7 +94,7 @@ def _patch(monkeypatch, rows_by_type, embed_calls: list[str] | None = None) -> _
 
 
 def test_default_quota_is_60_percent_formula(monkeypatch) -> None:
-    """top_k=5 且不限类型 → 方剂 3 条 + 医案 2 条，合并后按分数降序。"""
+    """top_k=5 且不限类型 → 方剂 3 + 医案 2，再额外追加理论 2，合并后按分数降序。"""
     embed_calls: list[str] = []
     pool = _patch(
         monkeypatch,
@@ -107,23 +107,47 @@ def test_default_quota_is_60_percent_formula(monkeypatch) -> None:
 
     units = asyncio.run(rv.retrieve("麻黄汤的组成", top_k=5, min_score=0.5))
 
-    # 两路是并发跑的（asyncio.gather + to_thread），线程完成顺序不保证 → 只比"查了哪几路、各几条"
-    assert {(c["ref_type"], c["limit"]) for c in pool.calls} == {("formula", 3), ("case", 2)}
+    # 多路是并发跑的（asyncio.gather + to_thread），线程完成顺序不保证 → 只比"查了哪几路、各几条"
+    assert {(c["ref_type"], c["limit"]) for c in pool.calls} == {
+        ("formula", 3),
+        ("case", 2),
+        ("node", 2),
+    }
     assert [u.score for u in units] == [0.9, 0.85, 0.7, 0.6, 0.55]
-    # 两路共用同一个问题向量：只 embed 一次（否则白白多花 200~300ms）
+    # 多路共用同一个问题向量：只 embed 一次（否则白白多花 200~300ms）
     assert embed_calls == ["麻黄汤的组成"]
 
 
 def test_limit_one_does_not_force_a_case_row(monkeypatch) -> None:
-    """top_k=1 → 只查方剂 1 条，**不发**医案那一路（case_k 必须用 0 兜底）。"""
+    """top_k=1 → 只查方剂 1 条，**不发**医案那一路（case_k 必须用 0 兜底）。
+
+    理论那一路是独立配额（min(retrieval_theory_top_k, top_k)=1），与 case_k 无关。
+    """
     pool = _patch(monkeypatch, {"formula": _rows("formula", [0.8]), "case": _rows("case", [0.9])})
 
     units = asyncio.run(rv.retrieve("桂枝汤", top_k=1, min_score=0.5))
 
-    assert [c["ref_type"] for c in pool.calls] == ["formula"]
-    assert pool.calls[0]["limit"] == 1
+    assert {(c["ref_type"], c["limit"]) for c in pool.calls} == {("formula", 1), ("node", 1)}
     assert len(units) == 1
     assert units[0].ref_type == "formula"
+
+
+def test_theory_channel_is_extra_and_labeled(monkeypatch) -> None:
+    """理论单元（ref_type=node）与方剂/医案一起进候选，且中文类型名是「理论」。"""
+    _patch(
+        monkeypatch,
+        {
+            "formula": _rows("formula", [0.7]),
+            "case": _rows("case", [0.6]),
+            "node": _rows("node", [0.8]),
+        },
+    )
+
+    units = asyncio.run(rv.retrieve("中医经典有什么作用", top_k=5, min_score=0.5))
+
+    assert [u.ref_type for u in units][0] == "node"      # 0.8 分最高，排第一
+    node_units = [u for u in units if u.ref_type == "node"]
+    assert node_units and node_units[0].kind_label == "理论"
 
 
 def test_explicit_ref_type_uses_single_path(monkeypatch) -> None:

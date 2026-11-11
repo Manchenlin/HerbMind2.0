@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     # 相似度下限：2026-10-22 实测——相关问题 0.61~0.73，无关问题（问天气）0.42~0.44，
     # 所以 0.5 是干净的分界线：低于它直接判"无命中"，连 LLM 都不用调（省时省钱）
     retrieval_min_score: float = 0.5
+    # 理论单元（章/节正文，`ref_type='node'`，如第一章「中医经典的作用」）的召回条数。
+    # 它**在 formula+case 配额之外额外追加**，不挤占"问方必有方"的比例；
+    # 章节正文动辄 5000+ 字，取多了会把提示词撑爆，默认只 2 条（提示词里还会再截断，见 context.py）。
+    retrieval_theory_top_k: int = 2
     llm_max_tokens: int = 800          # 回答长度上限
     llm_temperature: float = 0.2       # 医学问答求稳，不要发挥
 
