@@ -57,6 +57,10 @@ public interface BookMapper extends BaseMapper<Book> {
      * `content_unit.meta_jsonb` 里存了 chapter / section / category 三段名称，
      * 与 book_node.title 是对得上的，所以再用标题匹配一次兜住漏挂的单元。
      * titles 用 chr(1) 拼成一个字符串传进来（避免 MyBatis 反复 foreach），空则传哨兵。
+     *
+     * <p>排序第三级：`import_docx_gap.py` 补录的节级补充单元（meta_jsonb.gap=true）
+     * 与原文单元同页时排在前面 —— 它们是节的概述/病机论述，原书位置就在该节开头；
+     * 只靠 id 排序会排到同页原文之后（`cu_gap_*` 的 'g' 大于数字）。
      */
     @Select("<script>"
             + "SELECT u.id AS id, u.ref_type AS ref_type, u.ref_id AS ref_id, u.title AS title,"
@@ -73,7 +77,10 @@ public interface BookMapper extends BaseMapper<Book> {
             + " OR coalesce(u.meta_jsonb->>'category', '') = ANY(string_to_array(#{titles}, chr(1)))"
             + " OR coalesce(u.meta_jsonb->>'chapter', '') = ANY(string_to_array(#{titles}, chr(1)))"
             + " ORDER BY coalesce(nullif(regexp_replace(coalesce(u.meta_jsonb->>'page', ''),"
-            + " '^第([0-9]+).*$', '\\1'), '')::int, 999999), u.id"
+            + " '^第([0-9]+).*$', '\\1'), '')::int, 999999),"
+            + " CASE WHEN u.meta_jsonb->>'gap' = 'true' THEN 0 ELSE 1 END,"
+            + " coalesce(nullif(u.meta_jsonb->>'gapSeq', '')::int, 0),"
+            + " u.id"
             + "</script>")
     List<Map<String, Object>> unitsOfNode(@Param("formulaIds") List<String> formulaIds,
             @Param("caseIds") List<String> caseIds,

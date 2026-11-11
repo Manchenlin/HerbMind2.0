@@ -200,7 +200,7 @@ public class CatalogService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.joining("\u0001"));
         if (titles.isEmpty()) {
-            titles = "\u0000none";
+            titles = SENTINEL;
         }
 
         List<Map<String, Object>> rows = bookMapper.unitsOfNode(
@@ -217,9 +217,18 @@ public class CatalogService {
                 book == null ? null : book.getTitle(), units);
     }
 
-    /** MyBatis 的 foreach 遇到空集合会生成 `IN ()` 语法错误，这里塞一个不可能命中的哨兵值。 */
+    /**
+     * 哨兵值：MyBatis 的 foreach 遇到空集合会生成 `IN ()` 语法错误，这里塞一个不可能命中的 id。
+     *
+     * <p>**不能用 0x00 做哨兵**：PostgreSQL 的 text 类型不接受 NUL 字符，参数里带 0x00 会直接
+     * 报 `invalid byte sequence for encoding "UTF8": 0x00`。之前用 "\u0000none"，
+     * 于是"本节没有任何方剂/医案挂接"的节点（如第四章多数节）调用 content 接口一律 500。
+     * 现在用普通字符串，且前缀不用节点 id 可能出现的形态。
+     */
+    private static final String SENTINEL = "__hm_none__";
+
     private static List<String> orSentinel(List<String> ids) {
-        return ids == null || ids.isEmpty() ? List.of("\u0000none") : ids;
+        return ids == null || ids.isEmpty() ? List.of(SENTINEL) : ids;
     }
 
     private static String text(Map<String, Object> row, String key) {
