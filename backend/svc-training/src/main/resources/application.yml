@@ -1,0 +1,26 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: svc-training
+  datasource:
+    url: jdbc:postgresql://localhost:5432/herbmind
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true   # unit_ref -> unitRef
+  global-config:
+    db-config:
+      id-type: input                      # ID 由业务传入（TEXT）
+
+herbmind:
+  # 「今天 / 昨天」的判定基准时区（统计按用户所在时区切天）
+  zone: Asia/Shanghai

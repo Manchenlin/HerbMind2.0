@@ -20,15 +20,22 @@
         </option>
       </select>
 
-      <RouterLink class="btn primary sm" to="/login">登录 / 注册</RouterLink>
+      <RouterLink class="btn primary sm" v-if="!user" to="/login">登录 / 注册</RouterLink>
+
+      <!-- 已登录：头像 + 昵称，点击进入「我的」 -->
+      <RouterLink v-else class="me-entry" to="/me" :title="`${displayName} · 进入我的`">
+        <span class="avatar">{{ initial }}</span>
+        <span class="me-name">{{ displayName }}</span>
+      </RouterLink>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { toast } from '@/utils/toast'
+import { me, type UserDto } from '@/api/user'
 
 // 一级导航（与原型 assets/app.js 的 NAV 一致）
 const NAV = [
@@ -64,4 +71,53 @@ function onSwitch() {
   }
   toast(`已切换语料：${b.title}`)
 }
+
+/* ---------- 登录态：右上角显示「头像 + 昵称」，点进 /me ---------- */
+const user = ref<UserDto | null>(null)
+const displayName = computed(() => user.value?.nickname || user.value?.username || '')
+const initial = computed(() => displayName.value.slice(0, 1) || '我')
+
+async function loadUser() {
+  if (!localStorage.getItem('token')) {
+    user.value = null
+    return
+  }
+  try {
+    user.value = await me()
+  } catch {
+    // token 失效：拦截器会跳登录页，这里静默降级成「未登录」样式
+    user.value = null
+  }
+}
+
+onMounted(loadUser)
+// 登录 / 登出都会换路由，顺带刷新一下头像状态
+watch(() => route.path, loadUser)
 </script>
+
+<style scoped>
+.me-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px 3px 3px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: background 0.16s, border-color 0.16s;
+}
+
+.me-entry:hover {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.me-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+</style>

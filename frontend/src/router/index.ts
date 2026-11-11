@@ -2,25 +2,12 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 /**
  * 完整页面清单（对齐 03 信息架构）。
- * 域1（内容域）、域3（智能域）已实现；域2 未实现的页面统一走 ComingSoonView ——
- * 它会告诉你**负责人 + 要照哪个原型文件做**，这样三个人做出来的页面不会跑偏。
+ * 域1（内容域）、域2（成长域）、域3（智能域）的页面均已接入真实组件，本数组当前为空。
+ * 后续新增页面先在此登记「负责人 + 原型文件名」，占位页会据此提示该照哪个原型做，
+ * 这样三个人做出来的页面不会跑偏。
  */
 const PAGES: Array<{ path: string; title: string; owner: string; proto: string }> = [
-  // ---- 域2 成长域（练）----
-  { path: '/train', title: '练习台', owner: '域2', proto: 'train.html' },
-  { path: '/train/session/:id', title: '答题面板', owner: '域2', proto: 'answer.html' },
-  { path: '/train/report/:id', title: '评分报告', owner: '域2', proto: 'report.html' },
-  { path: '/train/blindbox', title: '案例盲盒', owner: '域2', proto: 'blindbox.html' },
-  { path: '/train/recite', title: '背诵打卡', owner: '域2', proto: 'train.html' },
-  { path: '/me', title: '我的 · 总览', owner: '域2', proto: 'me.html' },
-  { path: '/me/profile', title: '学习档案', owner: '域2', proto: 'profile.html' },
-  { path: '/me/favorites', title: '收藏夹', owner: '域2', proto: 'favorites.html' },
-  { path: '/me/notes', title: '我的笔记', owner: '域2', proto: 'favorites.html' },
-  { path: '/me/wrong', title: '错题本', owner: '域2', proto: 'profile.html' },
-  { path: '/me/collection', title: '我的方证库', owner: '域2', proto: 'favorites.html' },
-  { path: '/me/path', title: '学习路径', owner: '域2', proto: 'profile.html' },
-  { path: '/discuss', title: '讨论区', owner: '域2', proto: 'case.html' }
-  // 域3 智能域的 8 个页面已实现，见下方「域3（已实现）」段，此处不再列入占位
+  // 暂无待实现页面：三个域的页面均已实现，见下方 routes 中「已实现」各段
 ]
 
 const routes: RouteRecordRaw[] = [
@@ -109,6 +96,84 @@ const routes: RouteRecordRaw[] = [
     name: 'login',
     component: () => import('@/views/LoginView.vue'),
     meta: { title: '登录 / 注册', owner: '域2', proto: 'login.html' }
+  },
+  {
+    path: '/me',
+    name: 'me',
+    component: () => import('@/views/MeView.vue'),
+    meta: { title: '我的 · 总览', owner: '域2', proto: 'me.html' }
+  },
+  {
+    path: '/me/profile',
+    name: 'me-profile',
+    component: () => import('@/views/ProfileView.vue'),
+    meta: { title: '学习档案', owner: '域2', proto: 'profile.html' }
+  },
+  {
+    path: '/train',
+    name: 'train',
+    component: () => import('@/views/TrainView.vue'),
+    meta: { title: '练习台', owner: '域2', proto: 'train.html' }
+  },
+  {
+    path: '/train/session/:sessionId',
+    name: 'train-session',
+    component: () => import('@/views/AnswerView.vue'),
+    meta: { title: '答题', owner: '域2', proto: 'answer.html' }
+  },
+  {
+    path: '/train/report/:answerId',
+    name: 'train-report',
+    component: () => import('@/views/ReportView.vue'),
+    meta: { title: '评分报告', owner: '域2', proto: 'report.html' }
+  },
+  {
+    path: '/train/blindbox',
+    name: 'train-blindbox',
+    component: () => import('@/views/BlindboxView.vue'),
+    meta: { title: '案例盲盒', owner: '域2', proto: 'blindbox.html' }
+  },
+  {
+    path: '/train/recite',
+    name: 'train-recite',
+    component: () => import('@/views/ReciteView.vue'),
+    meta: { title: '背诵打卡', owner: '域2', proto: 'train.html' }
+  },
+  {
+    path: '/me/favorites',
+    name: 'me-favorites',
+    component: () => import('@/views/FavoritesView.vue'),
+    meta: { title: '收藏夹', owner: '域2', proto: 'favorites.html' }
+  },
+  {
+    path: '/me/notes',
+    name: 'me-notes',
+    component: () => import('@/views/NotesView.vue'),
+    meta: { title: '我的笔记', owner: '域2', proto: 'favorites.html' }
+  },
+  {
+    path: '/me/wrong',
+    name: 'me-wrong',
+    component: () => import('@/views/WrongBookView.vue'),
+    meta: { title: '错题本', owner: '域2', proto: 'profile.html' }
+  },
+  {
+    path: '/me/collection',
+    name: 'me-collection',
+    component: () => import('@/views/CollectionView.vue'),
+    meta: { title: '我的方证库', owner: '域2', proto: 'favorites.html' }
+  },
+  {
+    path: '/me/path',
+    name: 'me-path',
+    component: () => import('@/views/LearningPathView.vue'),
+    meta: { title: '学习路径', owner: '域2', proto: 'profile.html' }
+  },
+  {
+    path: '/discuss',
+    name: 'discuss',
+    component: () => import('@/views/DiscussView.vue'),
+    meta: { title: '讨论区', owner: '域2', proto: 'case.html' }
   },
   // ---- 域3 智能域（问）：8 页已实现，视觉照 graph / graph-map / ask / admin 四个原型 ----
   {

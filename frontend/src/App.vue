@@ -1,12 +1,14 @@
 <template>
   <div id="progress"></div>
-  <AppHeader />
 
-  <main class="wrap">
+  <!-- 登录页是整屏两栏布局（照 prototype/login.html），不叠顶栏和页脚 -->
+  <AppHeader v-if="!isAuthPage" />
+
+  <main :class="isAuthPage ? '' : 'wrap'">
     <RouterView />
   </main>
 
-  <footer>
+  <footer v-if="!isAuthPage">
     HerbMind v2 · 视觉基线沿用 <span class="mono">prototype/assets/theme.css</span> ·
     <RouterLink to="/me">我的</RouterLink> ·
     <RouterLink to="/me/favorites">收藏笔记</RouterLink> ·
@@ -15,8 +17,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
+
+const route = useRoute()
+const isAuthPage = computed(() => route.path === '/login')
 
 // 原型用 body.loaded 触发入场动画
 onMounted(() => document.body.classList.add('loaded'))
