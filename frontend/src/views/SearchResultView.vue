@@ -100,8 +100,8 @@
               <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
                 <span v-for="hb in h.herbs || []" :key="hb" class="chip">{{ hb }}</span>
                 <span v-if="h.page" class="chip">第 {{ h.page }} 页</span>
+                <span v-if="h.chapter" class="chip">{{ classicLabel(h.chapter) }}</span>
                 <span v-if="h.section" class="chip">{{ h.section }}</span>
-                <span v-else-if="h.chapter" class="chip">{{ h.chapter }}</span>
                 <span v-for="m in h.matchedBy || []" :key="m" class="chip" style="font-size:11px">
                   {{ legLabel(m) }}
                 </span>
@@ -126,6 +126,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { search, type SearchHit, type SearchResult } from '@/api/search'
 import Pager from '@/components/Pager.vue'
+import { classicLabel } from '@/utils/cite'
 import { highlight, scoreClass, scoreText, typeLabel, typeThumb } from '@/utils/format'
 
 const route = useRoute()
