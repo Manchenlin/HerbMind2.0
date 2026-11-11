@@ -51,6 +51,10 @@ from sync_content_unit import _to_pgvector, embed_batch, load_llm_conf
 
 BOOK_ID = "bk_1"
 BOOK_TITLE = "中医经典方证案例研究"
+# 作者由组长确认（2026-11-11）：现代 陈宝国。原先 bk_1 上写的「张仲景 / 汉」是第二章那部
+# 经典的作者，不是这本编纂书的作者，合并时必须覆盖掉。
+BOOK_AUTHOR = "陈宝国"
+BOOK_DYNASTY = "现代"
 MERGE_BOOK_IDS = ("bk_1", "bk_2", "bk_3")
 
 DEFAULT_DOCX = r"D:\HomeWork\_KeYanShiJian\中医经典方证原文.docx"
@@ -119,7 +123,8 @@ def plan_merge() -> list[str]:
             "若是其它数据集，本脚本不适用；请先人工确认 book 表内容。"
         )
     lines = [
-        f"书名：{BOOK_ID} 改为《{BOOK_TITLE}》，author/dynasty 置空（原值是各章经典的作者，不是这本书的）",
+        f"书名：{BOOK_ID} 改为《{BOOK_TITLE}》，作者改为 {BOOK_AUTHOR} / {BOOK_DYNASTY}"
+        "（原值「张仲景 / 汉」是第二章那部经典的作者，不是这本书的）",
     ]
     for table in ("book_node", "content_unit", "relation", "classic"):
         n = query(f"SELECT count(*) FROM {table} WHERE book_id = ANY(%s)", (list(MERGE_BOOK_IDS),))[0][0]
@@ -132,8 +137,8 @@ def plan_merge() -> list[str]:
 def do_merge() -> None:
     with pg() as conn, conn.cursor() as cur:
         cur.execute(
-            "UPDATE book SET title = %s, author = NULL, dynasty = NULL, edition = NULL WHERE id = %s",
-            (BOOK_TITLE, BOOK_ID),
+            "UPDATE book SET title = %s, author = %s, dynasty = %s, edition = NULL WHERE id = %s",
+            (BOOK_TITLE, BOOK_AUTHOR, BOOK_DYNASTY, BOOK_ID),
         )
         for table in ("book_node", "content_unit", "relation", "classic"):
             cur.execute(
