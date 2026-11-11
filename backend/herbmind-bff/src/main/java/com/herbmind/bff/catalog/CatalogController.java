@@ -18,6 +18,7 @@ import com.herbmind.contract.catalog.CatalogClient;
 import com.herbmind.contract.catalog.FormulaVO;
 import com.herbmind.contract.catalog.ImportRequest;
 import com.herbmind.contract.catalog.ImportStatusVO;
+import com.herbmind.contract.catalog.NodeContentVO;
 import com.herbmind.contract.catalog.NodeDetailVO;
 import com.herbmind.contract.catalog.QuoteListVO;
 import com.herbmind.contract.catalog.QuoteVO;
@@ -64,6 +65,12 @@ public class CatalogController {
     @GetMapping("/catalog/node/{id}")
     public R<NodeDetailVO> node(@PathVariable("id") String id) {
         return R.ok(catalog.nodeDetail(id));
+    }
+
+    /** 节点下全部单元正文（按原书页序）。典籍阅读页拿它渲染"原书正文"，不是摘要卡片。 */
+    @GetMapping("/catalog/node/{id}/content")
+    public R<NodeContentVO> nodeContent(@PathVariable("id") String id) {
+        return R.ok(catalog.nodeContent(id));
     }
 
     // ---------- 方剂 / 医案 / 条文 ----------

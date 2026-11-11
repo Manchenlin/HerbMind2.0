@@ -14,10 +14,14 @@
 
       <span class="spacer"></span>
 
-      <select class="booksel" title="切换语料（插拔式）" v-model="bookId" @change="onSwitch">
-        <option v-for="b in books" :key="b.id" :value="b.id">
-          {{ b.current ? '★ ' : '' }}{{ b.title }}{{ b.planned ? '（规划中）' : '' }}
-        </option>
+      <select
+        v-if="hasMultiple"
+        class="booksel"
+        title="切换语料（插拔式）"
+        v-model="bookId"
+        @change="onSwitch"
+      >
+        <option v-for="b in books" :key="b.id" :value="b.id">{{ b.title }}</option>
       </select>
 
       <RouterLink class="btn primary sm" v-if="!user" to="/login">登录 / 注册</RouterLink>
@@ -36,6 +40,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { toast } from '@/utils/toast'
 import { me, type UserDto } from '@/api/user'
+import { useBooks } from '@/composables/useBooks'
 
 // 一级导航（与原型 assets/app.js 的 NAV 一致）
 const NAV = [
@@ -49,12 +54,17 @@ const NAV = [
   { to: '/me', label: '我的' }
 ]
 
-const books = [
-  { id: 'bk_1', title: '伤寒论', current: true, planned: false },
-  { id: 'bk_2', title: '温病学', current: false, planned: false },
-  { id: 'bk_3', title: '金匮要略', current: false, planned: false }
-]
-const bookId = ref('bk_1')
+// 书单来自后端（composables/useBooks.ts）。合并语料后只有一本，切换器会自动隐藏，
+// 不再出现硬编码的「伤寒论 / 温病学 / 金匮要略」三本书名。
+const { books, hasMultiple, defaultBookId, titleOf, loadBooks } = useBooks()
+const bookId = ref('')
+watch(
+  books,
+  (list) => {
+    if (!bookId.value && list.length) bookId.value = defaultBookId.value
+  },
+  { immediate: true }
+)
 
 const route = useRoute()
 function isActive(to: string) {
@@ -62,14 +72,7 @@ function isActive(to: string) {
 }
 
 function onSwitch() {
-  const b = books.find((x) => x.id === bookId.value)
-  if (!b) return
-  if (b.planned) {
-    toast(`「${b.title}」规划中，敬请期待`)
-    bookId.value = 'bk_1'
-    return
-  }
-  toast(`已切换语料：${b.title}`)
+  toast(`已切换语料：${titleOf(bookId.value)}`)
 }
 
 /* ---------- 登录态：右上角显示「头像 + 昵称」，点进 /me ---------- */
@@ -90,7 +93,10 @@ async function loadUser() {
   }
 }
 
-onMounted(loadUser)
+onMounted(() => {
+  loadUser()
+  loadBooks()
+})
 // 登录 / 登出都会换路由，顺带刷新一下头像状态
 watch(() => route.path, loadUser)
 </script>

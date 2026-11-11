@@ -207,8 +207,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { createResearchPack, exportUrl, type ResearchPack } from '@/api/insight'
+import { useBooks } from '@/composables/useBooks'
 import { toast } from '@/utils/toast'
 
 type ExportFormat = 'csv' | 'json'
@@ -245,12 +246,13 @@ const kinds: KindOption[] = [
 
 const formats: ExportFormat[] = ['csv', 'json']
 
-const scopes = [
+// 导出范围由后端书单驱动（composables/useBooks.ts），不再写死三本书
+const { books, loadBooks } = useBooks()
+const scopes = computed(() => [
   { value: 'all', label: '全部语料' },
-  { value: 'book:bk_1', label: '《伤寒论》' },
-  { value: 'book:bk_2', label: '《温病学》' },
-  { value: 'book:bk_3', label: '《金匮要略》' }
-]
+  ...books.value.map((b) => ({ value: `book:${b.id}`, label: `《${b.title}》` }))
+])
+onMounted(loadBooks)
 
 const kind = ref<KindValue>('herbs')
 const format = ref<ExportFormat>('csv')

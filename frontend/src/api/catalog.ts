@@ -217,3 +217,31 @@ export function importBook(body: ImportRequest) {
 export function getImportStatus(importId: string) {
   return request.get<unknown, ImportStatus>(`/biz/catalog/import/${encodeURIComponent(importId)}`)
 }
+
+/** 一条知识单元的正文（原书文字原样返回，后端不做改写） */
+export interface UnitText {
+  id: string
+  /** formula / case / node */
+  refType: string
+  refId: string
+  title: string
+  /** full / theory */
+  unitType: string
+  /** 原书页码，形如「第19-22页」，可能为空串 */
+  page: string
+  content: string
+}
+
+/** 目录节点下的全部正文，按原书页序 */
+export interface NodeContent {
+  nodeId: string
+  nodeTitle: string
+  bookId?: string
+  bookTitle?: string
+  units: UnitText[]
+}
+
+/** 按节点取原文正文（典籍阅读页用来还原原书版面） */
+export function getNodeContent(id: string) {
+  return request.get<unknown, NodeContent>(`/biz/catalog/node/${encodeURIComponent(id)}/content`)
+}
