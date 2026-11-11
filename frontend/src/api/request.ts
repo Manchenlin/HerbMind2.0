@@ -28,13 +28,20 @@ request.interceptors.response.use(
     return body
   },
   (err) => {
-    const status = err.response?.status
-    const msg = err.response?.data?.msg
-    if (status === 401 || status === 403) {
+    const status: number | undefined = err.response?.status
+    const msg: string | undefined = err.response?.data?.msg
+    // 401 才是"登录态失效"，必须清 token 跳登录。
+    // 403 是"已登录但没权限"（治理后台、他人资源），清 token 等于把用户踢出登录、
+    // 还丢掉当前页面上下文 —— 交给调用方把 msg 显示出来。
+    if (status === 401) {
       localStorage.removeItem('token')
       if (location.pathname !== '/login') location.href = '/login'
     }
-    return Promise.reject(new Error(msg || err.message || '请求失败'))
+    // 状态码挂到 Error 上：只留 message 的话，调用方分不出 4000（参数错）/4040（实体不存在）
+    // /5000（服务异常），`api/graph.ts` 的 `httpStatus` 就是靠这个字段做分支的。
+    const wrapped = new Error(msg || err.message || '请求失败') as Error & { status?: number }
+    if (typeof status === 'number') wrapped.status = status
+    return Promise.reject(wrapped)
   }
 )
 

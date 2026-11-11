@@ -1,0 +1,27 @@
+- main [ref=f2e3]:
+  - generic [ref=f2e4]:
+    - complementary [ref=f2e5]:
+      - generic [ref=f2e6]: H
+      - heading "一图见方证， 一问解经义，一练成明医。" [level=1] [ref=f2e7]: 一图见方证，一问解经义，一练成明医。
+      - paragraph [ref=f2e8]: 可插拔的多语料中医知识平台 —— 以《中医经典方证案例研究》为首个语料，已接入《伤寒论》原文。
+      - generic [ref=f2e9]:
+        - generic [ref=f2e10]: ◆ 多维检索 · 语义问答（Agent 可溯源）
+        - generic [ref=f2e11]: ◆ 先思后看 · AI 评分 · 错题本
+        - generic [ref=f2e12]: ◆ 方-证-药-症 知识图谱 · 可插拔书架
+    - main [ref=f2e13]:
+      - generic [ref=f2e14]:
+        - generic [ref=f2e15]:
+          - button "登录" [ref=f2e16] [cursor=pointer]
+          - button "注册" [ref=f2e17] [cursor=pointer]
+        - generic [ref=f2e18]:
+          - generic [ref=f2e19]:
+            - generic [ref=f2e20]: 用户名
+            - textbox "请输入用户名" [ref=f2e21]
+          - generic [ref=f2e22]:
+            - generic [ref=f2e23]: 密码
+            - textbox "请输入密码" [ref=f2e24]
+          - button "登录" [ref=f2e25] [cursor=pointer]
+          - generic [ref=f2e26]: 已接入 POST /api/biz/user/login（域2 svc-identity）
+          - generic [ref=f2e27]:
+            - text: 还没有账号？
+            - button "免费注册" [ref=f2e28] [cursor=pointer]

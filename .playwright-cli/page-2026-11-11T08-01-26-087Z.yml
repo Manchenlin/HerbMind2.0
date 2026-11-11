@@ -1,0 +1,67 @@
+- generic [ref=f15e2]:
+  - banner [ref=f15e3]:
+    - generic [ref=f15e4]:
+      - link "H HerbMind 本草心智" [ref=f15e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f15e6]: H
+        - text: HerbMind 本草心智
+      - navigation [ref=f15e7]:
+        - link "首页" [ref=f15e8] [cursor=pointer]:
+          - /url: /
+        - link "书架" [ref=f15e9] [cursor=pointer]:
+          - /url: /shelf
+        - link "典籍" [ref=f15e10] [cursor=pointer]:
+          - /url: /library
+        - link "检索" [ref=f15e11] [cursor=pointer]:
+          - /url: /search
+        - link "练习" [ref=f15e12] [cursor=pointer]:
+          - /url: /train
+        - link "图谱" [ref=f15e13] [cursor=pointer]:
+          - /url: /graph
+        - link "智能问答" [ref=f15e14] [cursor=pointer]:
+          - /url: /ask
+        - link "我的" [ref=f15e15] [cursor=pointer]:
+          - /url: /me
+      - combobox "切换语料（插拔式）" [ref=f15e16] [cursor=pointer]:
+        - option "★ 伤寒论" [selected]
+        - option "温病学"
+        - option "金匮要略"
+      - link "d demo" [ref=f15e17] [cursor=pointer]:
+        - /url: /me
+        - generic [ref=f15e18]: d
+        - generic [ref=f15e19]: demo
+  - main [ref=f15e20]:
+    - generic [ref=f15e21]:
+      - link "首页" [ref=f15e22] [cursor=pointer]:
+        - /url: /
+      - text: /
+      - link "图谱" [ref=f15e23] [cursor=pointer]:
+        - /url: /graph
+      - text: / 相似度地图
+    - generic [ref=f15e24]:
+      - generic [ref=f15e25]:
+        - heading "方证相似度地图" [level=1] [ref=f15e26]
+        - paragraph [ref=f15e27]: 全部方剂按药味组成重合度（Jaccard）降维投影到 2D：距离越近，共用药味越多。 当前 0 首方 · 0 个分组
+      - generic [ref=f15e28]:
+        - combobox [ref=f15e29]:
+          - option "60 首"
+          - option "150 首" [selected]
+          - option "250 首"
+        - link "← 返回图谱" [ref=f15e30] [cursor=pointer]:
+          - /url: /graph
+    - generic [ref=f15e31]: 正在计算 150 首方的药味重合度与二维坐标…
+    - paragraph [ref=f15e32]: 悬停查看方名，点击查看详情。坐标为服务端确定性计算（PCoA 降维）， 同一版本 version=— 反复请求会得到同一张图，可复现、可截图。 分组仅按药味重合度切分，不代表证型、功效或任何医学分类。 本图共 0 个分组，多数只有 1~2 首方；一组一色会让图例比图还长， 因此按规模从大到小最多给 8 组上色（本次取到 0 组，最小一组 3 首），其余统一灰色。
+    - dialog [ref=f15e33]:
+      - generic [ref=f15e35]:
+        - heading [level=3]
+        - button "关闭" [ref=f15e36] [cursor=pointer]
+  - contentinfo [ref=f15e38]:
+    - text: HerbMind v2 · 视觉基线沿用 prototype/assets/theme.css ·
+    - link "我的" [ref=f15e39] [cursor=pointer]:
+      - /url: /me
+    - text: ·
+    - link "收藏笔记" [ref=f15e40] [cursor=pointer]:
+      - /url: /me/favorites
+    - text: ·
+    - link "治理后台" [ref=f15e41] [cursor=pointer]:
+      - /url: /admin

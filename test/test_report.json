@@ -1,0 +1,237 @@
+{
+  "project": "HerbMind 本草心智",
+  "framework": "vitest 2.1.8 (TypeScript) + pytest 9.1.1 (Python)",
+  "timestamp": "2026-11-11T15:05:00+08:00",
+  "scope": "根目录 test/ 下新增测试，覆盖本轮图谱链路改动的前端纯逻辑与 Agent 工具纯函数；不改动 agent/tests 与任何源码",
+  "units_detected": 15,
+  "tests_generated": 84,
+  "tests_run": 84,
+  "tests_passed": 84,
+  "tests_failed": 0,
+  "tests_skipped": 0,
+  "pass_rate": 100.0,
+  "duration_seconds": 1.85,
+  "units": [
+    {
+      "id": 1,
+      "priority": "P1",
+      "file": "frontend/src/utils/graphLayout.ts",
+      "unit_name": "layoutNeighbors",
+      "type": "function",
+      "line": 110,
+      "tests": [
+        { "name": "中心节点固定在画布中心，节点总数 = 中心 + 邻居", "status": "passed", "duration": 0.004 },
+        { "name": "邻居落在环上（椭圆归一化距离 ≈ 1），不会挤在中心", "status": "passed", "duration": 0.003 },
+        { "name": "边原样映射为 from/to/rel，不改语义", "status": "passed", "duration": 0.002 },
+        { "name": "51 个节点全部落在画布内（不画出边界）", "status": "passed", "duration": 0.006 },
+        { "name": "邻居之间不重叠：圆心距 ≥ 两半径之和", "status": "passed", "duration": 0.005 },
+        { "name": "节点太多时半径被压缩，但不小于可读下限 9", "status": "passed", "duration": 0.002 },
+        { "name": "药味在内圈、方剂在外圈：内圈更靠近中心", "status": "passed", "duration": 0.003 },
+        { "name": "没有任何邻居时只画中心节点，不抛异常", "status": "passed", "duration": 0.002 }
+      ]
+    },
+    {
+      "id": 2,
+      "priority": "P1",
+      "file": "frontend/src/utils/graphLayout.ts",
+      "unit_name": "layoutFormula",
+      "type": "function",
+      "line": 144,
+      "tests": [
+        { "name": "中心 + 药味 + 相关方都上画布", "status": "passed", "duration": 0.003 },
+        { "name": "只画「中心方 → 药味」的边，不给相关方造假边", "status": "passed", "duration": 0.002 },
+        { "name": "药味为空时没有边", "status": "passed", "duration": 0.002 }
+      ]
+    },
+    {
+      "id": 3,
+      "priority": "P1",
+      "file": "frontend/src/utils/graphLayout.ts",
+      "unit_name": "layoutMap",
+      "type": "function",
+      "line": 190,
+      "tests": [
+        { "name": "0~1 坐标线性映射到画布内边距，不重排", "status": "passed", "duration": 0.002 },
+        { "name": "半径缩小到方心子图的一半以下（一屏要放 150+ 个点）", "status": "passed", "duration": 0.002 },
+        { "name": "cluster 原样保留，供分组配色使用", "status": "passed", "duration": 0.002 }
+      ]
+    },
+    {
+      "id": 4,
+      "priority": "P1",
+      "file": "frontend/src/utils/graphLayout.ts",
+      "unit_name": "mapGroups",
+      "type": "function",
+      "line": 259,
+      "tests": [
+        { "name": "规模降序排；达到门槛的组上色并给「第 N 组」", "status": "passed", "duration": 0.002 },
+        { "name": "同规模时按 cluster 序号升序（保证配色可复现）", "status": "passed", "duration": 0.002 },
+        { "name": "最多只给 8 组上色，其余统一灰，颜色不重复", "status": "passed", "duration": 0.003 },
+        { "name": "组内方剂数不足门槛的组一律不上色", "status": "passed", "duration": 0.002 },
+        { "name": "空输入返回空数组，不抛异常", "status": "passed", "duration": 0.001 }
+      ]
+    },
+    {
+      "id": 5,
+      "priority": "P2",
+      "file": "frontend/src/utils/graphLayout.ts",
+      "unit_name": "nodeRadius",
+      "type": "function",
+      "line": 46,
+      "tests": [
+        { "name": "方剂比药味大，未登记的类型退回药味尺寸", "status": "passed", "duration": 0.001 }
+      ]
+    },
+    {
+      "id": 6,
+      "priority": "P1",
+      "file": "frontend/src/api/graph.ts",
+      "unit_name": "isEntityMissing",
+      "type": "function",
+      "line": 258,
+      "tests": [
+        { "name": "4040（404 + 后端说明）判为实体不存在", "status": "passed", "duration": 0.002 },
+        { "name": "裸 404（路由没匹配上，没有后端 msg）不判为实体不存在", "status": "passed", "duration": 0.002 },
+        { "name": "400 / 500 一律不算实体不存在", "status": "passed", "duration": 0.002 },
+        { "name": "不是 Error 的输入也不抛异常", "status": "passed", "duration": 0.001 }
+      ]
+    },
+    {
+      "id": 7,
+      "priority": "P1",
+      "file": "frontend/src/api/graph.ts",
+      "unit_name": "graphErrMsg",
+      "type": "function",
+      "line": 269,
+      "tests": [
+        { "name": "4000：原样透传后端 msg", "status": "passed", "duration": 0.002 },
+        { "name": "4040：原样透传后端 msg，而不是兜成服务异常", "status": "passed", "duration": 0.002 },
+        { "name": "裸 404：提示去查 BFF 路由", "status": "passed", "duration": 0.002 },
+        { "name": "5000：带后端说明时透传，没说明时提示查 svc-graph", "status": "passed", "duration": 0.002 },
+        { "name": "501/405：提示检查网关放行", "status": "passed", "duration": 0.002 },
+        { "name": "没有状态码的普通错误：回落到 message", "status": "passed", "duration": 0.001 },
+        { "name": "完全取不到信息时给兜底文案，不返回空串", "status": "passed", "duration": 0.002 },
+        { "name": "兼容旧式 axios 错误（status 在 response 里）", "status": "passed", "duration": 0.002 }
+      ]
+    },
+    {
+      "id": 8,
+      "priority": "P2",
+      "file": "agent/app/tools/common.py",
+      "unit_name": "ok_result / miss_result / error_result",
+      "type": "function",
+      "line": 22,
+      "tests": [
+        { "name": "三种出口字段集合固定为六字段", "status": "passed", "duration": 0.002 },
+        { "name": "ok_result 计数并标记 hit", "status": "passed", "duration": 0.001 },
+        { "name": "ok_result 空列表时 hit=False 且不挂免责声明", "status": "passed", "duration": 0.001 },
+        { "name": "有 items 时必带 NOTICE_FACT 免责声明", "status": "passed", "duration": 0.001 },
+        { "name": "miss_result 是成功但无命中", "status": "passed", "duration": 0.001 },
+        { "name": "error_result 是失败并带原因", "status": "passed", "duration": 0.001 },
+        { "name": "ok 结果的 hint 不被丢弃", "status": "passed", "duration": 0.001 }
+      ]
+    },
+    {
+      "id": 9,
+      "priority": "P2",
+      "file": "agent/app/tools/graph.py",
+      "unit_name": "resolve_label",
+      "type": "function",
+      "line": 46,
+      "tests": [
+        { "name": "11 个已知别名映射（含中文与大小写）", "status": "passed", "duration": 0.004 },
+        { "name": "7 个未知标签返回 None", "status": "passed", "duration": 0.003 },
+        { "name": "None 视为未知", "status": "passed", "duration": 0.001 }
+      ]
+    },
+    {
+      "id": 10,
+      "priority": "P2",
+      "file": "agent/app/tools/graph.py",
+      "unit_name": "_rel_types",
+      "type": "function",
+      "line": 51,
+      "tests": [
+        { "name": "连到中心的边被识别", "status": "passed", "duration": 0.001 },
+        { "name": "边的方向不影响识别", "status": "passed", "duration": 0.001 },
+        { "name": "不连中心的边被忽略", "status": "passed", "duration": 0.001 },
+        { "name": "缺 rel 时返回空而不是猜一个", "status": "passed", "duration": 0.001 },
+        { "name": "重复关系去重", "status": "passed", "duration": 0.001 },
+        { "name": "无边返回空", "status": "passed", "duration": 0.001 }
+      ]
+    },
+    {
+      "id": 11,
+      "priority": "P2",
+      "file": "agent/app/tools/score.py",
+      "unit_name": "_segments",
+      "type": "function",
+      "line": 155,
+      "tests": [
+        { "name": "按中文标点切条目", "status": "passed", "duration": 0.001 },
+        { "name": "单字碎屑被丢弃", "status": "passed", "duration": 0.001 },
+        { "name": "空输入与纯标点返回空列表", "status": "passed", "duration": 0.001 },
+        { "name": "不在条目内部拆词（脉浮缓不拆）", "status": "passed", "duration": 0.001 }
+      ]
+    },
+    {
+      "id": 12,
+      "priority": "P2",
+      "file": "agent/app/tools/score.py",
+      "unit_name": "_bigrams",
+      "type": "function",
+      "line": 148,
+      "tests": [
+        { "name": "标点与空格被剔除", "status": "passed", "duration": 0.001 },
+        { "name": "生成重叠二字词", "status": "passed", "duration": 0.001 },
+        { "name": "单字与空串没有二字词", "status": "passed", "duration": 0.001 }
+      ]
+    },
+    {
+      "id": 13,
+      "priority": "P2",
+      "file": "agent/app/tools/score.py",
+      "unit_name": "_match_items",
+      "type": "function",
+      "line": 181,
+      "tests": [
+        { "name": "逐字条目保留", "status": "passed", "duration": 0.001 },
+        { "name": "多出标点空格仍能对齐", "status": "passed", "duration": 0.001 },
+        { "name": "候选清单外的条目被丢弃", "status": "passed", "duration": 0.001 },
+        { "name": "重复只算一次且保序", "status": "passed", "duration": 0.001 },
+        { "name": "部分作答（脉浮 vs 脉浮缓）不被提升为命中", "status": "passed", "duration": 0.001 },
+        { "name": "空串输入被忽略", "status": "passed", "duration": 0.001 }
+      ]
+    },
+    {
+      "id": 14,
+      "priority": "P2",
+      "file": "agent/app/tools/score.py",
+      "unit_name": "_norm",
+      "type": "function",
+      "line": 176,
+      "tests": [
+        { "name": "去标点空格", "status": "passed", "duration": 0.001 },
+        { "name": "None 安全", "status": "passed", "duration": 0.001 }
+      ]
+    },
+    {
+      "id": 15,
+      "priority": "P2",
+      "file": "agent/app/tools/score.py",
+      "unit_name": "_score_of",
+      "type": "function",
+      "line": 135,
+      "tests": [
+        { "name": "覆盖率口径 hit/(hit+miss)，5 组参数化用例", "status": "passed", "duration": 0.002 }
+      ]
+    }
+  ],
+  "failed_details": [],
+  "uncovered_areas": [
+    "backend/herbmind-bff：无 src/test 目录，GraphExceptionAdvice 的状态码映射 0 覆盖",
+    "backend/herbmind-gateway：无测试，JWT 白名单与 401 R 外壳 0 覆盖",
+    "frontend/src/views/*.vue：无组件级测试（需 @vue/test-utils + jsdom，本轮未引入）",
+    "frontend/src/api/request.ts：拦截器行为只能通过 mock adapter 测，本轮未建 mock"
+  ]
+}

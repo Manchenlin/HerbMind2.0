@@ -249,27 +249,31 @@ function backendMsg(e: unknown): string | undefined {
   return undefined
 }
 
-/** 图谱接口是否「尚未上线」（BFF 那层还没做）。404/501/405 都算。 */
-export function isGraphNotImplemented(e: unknown): boolean {
-  const status = httpStatus(e)
-  return status === 404 || status === 501 || status === 405
+/**
+ * 404 **且**带后端 `R.msg` ⇒ 实体确实不在图里（区别于"路由没匹配上"的裸 404）。
+ *
+ * 用途：§15.1 的 `label` 契约默认是 `Formula`，中文药名（桂枝）直接查会 4040；
+ * 页面据此退一步按 `Herb` 再查一次，避免把"药名"当成"实体不存在"报给用户。
+ */
+export function isEntityMissing(e: unknown): boolean {
+  return httpStatus(e) === 404 && !!backendMsg(e)
 }
 
 /**
  * 把图谱接口错误压成一句能指导下一步的话（页面直接显示）。
  *
  * 404 有两种，靠后端的 `R.msg` 区分：
- *   · 有 msg（如「实体不存在」）→ 是 4040，参数本身没问题，提示改传参；
- *   · 没 msg（Spring 默认 404 体）→ 是 BFF 那层还没实现，提示等 §15.6 步骤 2。
+ *   · 有 msg（如「图中找不到实体」）→ 是 4040，参数本身没问题，提示换实体；
+ *   · 没 msg（Spring 默认 404 体）→ 路由没匹配上，多半是 BFF 没起或网关没转发。
  */
 export function graphErrMsg(e: unknown): string {
   const status = httpStatus(e)
   const msg = backendMsg(e)
   if (status === 400) return msg || '参数不合法（4000）：检查 label / hops，或方名重名时改用 ID'
   if (status === 404) {
-    return msg || '图谱接口尚未上线（BFF /api/biz/graph 未实现，见 09 契约 §15.6 步骤 2）'
+    return msg || '图谱接口 404：BFF 的 /api/biz/graph 路由没匹配上，确认 bff 与网关都在跑'
   }
   if (status === 500) return msg || '图谱服务异常（5000）：确认 svc-graph :8085 与 Neo4j/PG 已启动'
-  if (status === 501 || status === 405) return '图谱接口尚未上线（BFF /api/biz/graph 未实现）'
+  if (status === 501 || status === 405) return '图谱接口不可用（501/405）：检查网关是否放行 /api/biz/graph'
   return msg || '请求失败'
 }

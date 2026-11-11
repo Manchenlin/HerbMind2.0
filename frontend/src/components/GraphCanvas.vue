@@ -135,6 +135,9 @@ function shortName(name: string, r: number) {
 <style scoped>
 .gcanvas-svg {
   width: 100%;
+  /* 画布是 860×560，撑满宽屏会到 640px 高、中心节点掉到折叠线以下；
+     限高后由 preserveAspectRatio 自动缩放居中，一屏内能看到整张图。 */
+  max-height: 66vh;
   display: block;
   background: linear-gradient(135deg, #fbfcfb, #f5f7f6);
 }
