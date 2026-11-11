@@ -44,3 +44,12 @@ agent/test_report.json
 agent/test_report.md
 
 .codebuddy
+
+# 本地工具产物：走查截图/页面快照、Vite 预构建缓存、起服务时的 stderr 重定向
+# （2026-11-11 曾被 git add . 误提交进 2b90fe3，已在 6c15621 移除）
+.playwright-cli/
+.vite/
+tmp-*.err
+
+.vite/
+.playwright-cli/
