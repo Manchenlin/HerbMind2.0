@@ -120,10 +120,22 @@ def _patch_search(monkeypatch, module, fake: _FakeSearch) -> _FakeSearch:
 # ==================== 工具清单 ====================
 
 
-def test_only_four_tools_in_phase_one() -> None:
-    """一期只挂 4 个工具：`syndrome`/`dosage_rule` 表都是 0 行，挂上去只会诱发编造。"""
-    assert tool_names() == ["search_formula", "search_case", "semantic_recall", "graph_neighbors"]
-    assert len(ALL_TOOLS) == 4
+def test_phase_one_tool_list() -> None:
+    """一期挂 5 个工具。
+
+    `dosage_convert` 仍然不挂：`dosage_rule` 0 行，挂上去只会诱发编造。
+    `syndrome_score` 于 2026-11-11 补挂 —— 参考答案用的是 `formula.syndrome_text`
+    （232/245）与 `case_record.syndrome_text`（276/290）这类自由文本，
+    不依赖 `syndrome`/`symptom` 字典表（那两张表仍是 0 行，属图谱查询的前提，不是打分的前提）。
+    """
+    assert tool_names() == [
+        "search_formula",
+        "search_case",
+        "semantic_recall",
+        "graph_neighbors",
+        "syndrome_score",
+    ]
+    assert len(ALL_TOOLS) == 5
     for item in ALL_TOOLS:
         assert item.description, f"{item.name} 缺少描述：模型靠它选工具"
 

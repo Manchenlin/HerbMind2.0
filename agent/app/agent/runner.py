@@ -50,6 +50,11 @@ _DECISION_TIMEOUT = 20.0
 # 工具名 → 工具对象。名字与 ALL_TOOLS 一致，模型返回的 name 直接查表
 _TOOL_MAP = {t.name: t for t in ALL_TOOLS}
 
+# 内部要调 LLM 的工具：超时更宽、且不重试。
+# 这类工具失败一次再重试等于把同一笔模型开销烧两遍，而且工具内部已有降级（字面比对），
+# 外层重试救不回来什么。
+_LLM_TOOLS = frozenset({"syndrome_score"})
+
 # 「必须遍历库内完整清单」的问法。命中这些模式时，光靠 RAG 的 5 条片段作答一定不全，
 # 所以首轮用 `tool_choice="required"` 强制模型取证。
 #
@@ -220,11 +225,17 @@ async def _execute(
             result,
         )
 
-    timeout = max(0.5, min(settings.agent_tool_timeout, remaining))
+    # 调模型的工具耗时量级不同（1~8s vs 几十 ms），共用 5s 会让它常态化超时
+    per_call_timeout = (
+        settings.agent_llm_tool_timeout if name in _LLM_TOOLS else settings.agent_tool_timeout
+    )
+    max_attempts = 1 if name in _LLM_TOOLS else 2
+
+    timeout = max(0.5, min(per_call_timeout, remaining))
     result: dict[str, Any] | None = None
     error = ""
 
-    for attempt in (1, 2):
+    for attempt in range(1, max_attempts + 1):
         try:
             raw = await asyncio.wait_for(_invoke_tool(tool, args), timeout=timeout)
             result = raw if isinstance(raw, dict) else {"ok": True, "hit": bool(raw), "count": 0, "items": raw, "hint": "", "notice": ""}
@@ -238,12 +249,12 @@ async def _execute(
         except Exception as exc:  # noqa: BLE001 —— 工具层异常一律转成可读结果
             error = f"{type(exc).__name__}: {exc}"
 
-        if attempt == 1:
+        if attempt < max_attempts:
             remaining = deadline - time.monotonic()
             if remaining <= 0.2:
                 break
             # 重试也不能超预算
-            timeout = max(0.5, min(settings.agent_tool_timeout, remaining))
+            timeout = max(0.5, min(per_call_timeout, remaining))
 
     if result is None:
         logger.warning("工具 %s 执行失败：%s", name, error)
