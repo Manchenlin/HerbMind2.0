@@ -193,8 +193,18 @@ public class CatalogService {
                 : caseMapper.selectList(new QueryWrapper<CaseRecord>().in("main_formula_id", formulaIds))
                         .stream().map(CaseRecord::getId).toList();
 
+        // 兜底用的标题清单：子树里所有节点的标题，用于匹配 content_unit.meta_jsonb 里的章/节/类名称
+        String titles = all.stream()
+                .filter(n -> subtree.contains(n.getId()))
+                .map(BookNode::getTitle)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining("\u0001"));
+        if (titles.isEmpty()) {
+            titles = "\u0000none";
+        }
+
         List<Map<String, Object>> rows = bookMapper.unitsOfNode(
-                orSentinel(formulaIds), orSentinel(caseIds), orSentinel(new ArrayList<>(subtree)));
+                orSentinel(formulaIds), orSentinel(caseIds), orSentinel(new ArrayList<>(subtree)), titles);
 
         List<UnitTextVO> units = rows.stream()
                 .map(r -> new UnitTextVO(

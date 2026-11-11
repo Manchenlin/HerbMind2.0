@@ -51,6 +51,12 @@ public interface BookMapper extends BaseMapper<Book> {
      * 排序用 `meta_jsonb->>'page'` 里的起始页码（形如「第19-22页」取 19），无页码的排最后。
      *
      * <p>三个 id 列表调用方必须保证非空（空列表会生成 `IN ()` 语法错误），服务层用哨兵值兜住。
+     *
+     * <p>为什么还要按标题兜底：实测 245 个方剂里有 **131 个 `node_id` 为空**（原 ETL 没回填），
+     * 只按节点挂接取数会让这些方剂的正文在节/章页上凭空消失。
+     * `content_unit.meta_jsonb` 里存了 chapter / section / category 三段名称，
+     * 与 book_node.title 是对得上的，所以再用标题匹配一次兜住漏挂的单元。
+     * titles 用 chr(1) 拼成一个字符串传进来（避免 MyBatis 反复 foreach），空则传哨兵。
      */
     @Select("<script>"
             + "SELECT u.id AS id, u.ref_type AS ref_type, u.ref_id AS ref_id, u.title AS title,"
@@ -63,10 +69,14 @@ public interface BookMapper extends BaseMapper<Book> {
             + "<foreach collection='caseIds' item='x' open='(' separator=',' close=')'>#{x}</foreach>)"
             + " OR (u.ref_type = 'node' AND u.ref_id IN "
             + "<foreach collection='nodeIds' item='x' open='(' separator=',' close=')'>#{x}</foreach>)"
+            + " OR coalesce(u.meta_jsonb->>'section', '') = ANY(string_to_array(#{titles}, chr(1)))"
+            + " OR coalesce(u.meta_jsonb->>'category', '') = ANY(string_to_array(#{titles}, chr(1)))"
+            + " OR coalesce(u.meta_jsonb->>'chapter', '') = ANY(string_to_array(#{titles}, chr(1)))"
             + " ORDER BY coalesce(nullif(regexp_replace(coalesce(u.meta_jsonb->>'page', ''),"
             + " '^第([0-9]+).*$', '\\1'), '')::int, 999999), u.id"
             + "</script>")
     List<Map<String, Object>> unitsOfNode(@Param("formulaIds") List<String> formulaIds,
             @Param("caseIds") List<String> caseIds,
-            @Param("nodeIds") List<String> nodeIds);
+            @Param("nodeIds") List<String> nodeIds,
+            @Param("titles") String titles);
 }
