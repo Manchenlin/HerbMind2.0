@@ -49,12 +49,21 @@ TOOL_NOTE = """
 """
 
 
+# 理论单元（章/节正文）单条进提示词的字数上限。
+# 一节正文实测 5000~7500 字，全塞进去光一条就顶掉整个上下文预算；
+# 截断后明确告诉模型"以上为节选"，避免它以为这就是全文。
+NODE_CONTENT_LIMIT = 1200
+
+
 def build_materials(units: list[RetrievedUnit]) -> str:
     """把召回结果编号拼成【资料】块。"""
     blocks = []
     for idx, unit in enumerate(units, 1):
         head = f"[{idx}]（{unit.kind_label}：{unit.title or unit.id}）"
-        blocks.append(f"{head}\n{unit.content.strip()}")
+        text = unit.content.strip()
+        if unit.ref_type == "node" and len(text) > NODE_CONTENT_LIMIT:
+            text = text[:NODE_CONTENT_LIMIT] + "\n……（本节原文较长，以上为节选）"
+        blocks.append(f"{head}\n{text}")
     return "\n\n".join(blocks)
 
 

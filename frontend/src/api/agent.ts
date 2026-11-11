@@ -73,7 +73,8 @@ export function getHealth() {
 
 export function askSync(
   question: string,
-  opts: { topK?: number; refType?: 'formula' | 'case'; conversationId?: string } = {}
+  // refType: node = 理论章节（如「第一节 中医经典的作用」），由 agent 的第三路召回提供
+  opts: { topK?: number; refType?: 'formula' | 'case' | 'node'; conversationId?: string } = {}
 ) {
   return request.post<never, AskData>(
     '/agent/ask/sync',

@@ -15,11 +15,15 @@ from db import neo4j_driver, query  # noqa: E402
 BFF = os.getenv("BFF_BASE", "http://localhost:8090")
 FAIL = False
 
-# 正式数据基线（来自 migrate_legacy + 2026-10-26 补录 + 2026-11-11 docx 正文补录）
+# 正式数据基线（来自 migrate_legacy + 2026-10-26 补录 + 2026-11-11 两轮补录）
 # formula_herb 从 1006 涨到 1315：2026-10-26 用 database/etl/apply_supplement.py 补了 309 条组成，
 # 补录输入见 database/etl/data/formula_herb_supplement.csv。改这条基线前先确认补录是否仍然生效。
-# content_unit 从 538 涨到 598：2026-11-11 用 database/etl/import_docx_gap.py 补了 58 条节级概述
-# （section_abstract）+ 2 条方证比较表（table），见 data 目录说明与本机 memory/03。
+# content_unit 535 → 538：2026-11-11 用 database/etl/merge_book_and_import_chapter1.py 补回原先
+# 整章丢失的第一章（3 个 theory 单元，ref_type='node'）。
+# content_unit 538 → 598：2026-11-11 用 database/etl/import_docx_gap.py 补了 58 条节级概述
+# （section_abstract）+ 2 条方证比较表（table）。
+# 两轮补录的顺序：先 merge_book_and_import_chapter1（会重建 book_node），再 import_docx_gap
+# （后者按节点标题挂接，节点变了必须重跑）。
 EXPECT = {
     "formula": 245,
     "case_record": 290,
