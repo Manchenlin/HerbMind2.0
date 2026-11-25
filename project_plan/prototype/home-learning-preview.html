@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="本草心智新版首页界面预览：阅读中医典籍、检索方证医案、进行病案练习。">
+  <title>本草心智｜中医经典学习平台</title>
+  <style>
+    :root {
+      --primary: #2e7d6f;
+      --primary-deep: #1f5c52;
+      --primary-ink: #173f37;
+      --primary-soft: #e6f2ef;
+      --accent: #d9724e;
+      --gold: #c8a96a;
+      --bg: #fafaf8;
+      --surface: #ffffff;
+      --surface-2: #f4f4f0;
+      --border: #dedfd9;
+      --text: #1f2328;
+      --text-2: #626a70;
+      --text-3: #858c91;
+      --serif: "Noto Serif SC", "Songti SC", SimSun, serif;
+      --sans: "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+      --max-width: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 96px; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, p, blockquote { margin: 0; }
+    h1, h2, h3 { font-family: var(--serif); font-weight: 600; }
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button, input { border-radius: 0; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    ::selection { background: var(--primary-soft); color: var(--primary-ink); }
+
+    .skip-link {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 100;
+      padding: 8px 14px;
+      background: var(--text);
+      color: white;
+      transform: translateY(-160%);
+    }
+    .skip-link:focus { transform: none; }
+    .shell { width: min(var(--max-width), calc(100% - 48px)); margin: 0 auto; }
+    .section { padding: 104px 0; border-top: 1px solid var(--border); }
+    .section-kicker {
+      margin-bottom: 14px;
+      color: var(--primary-deep);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .12em;
+    }
+    .section-title { font-size: clamp(32px, 4vw, 44px); line-height: 1.3; letter-spacing: -.025em; }
+    .section-copy { max-width: 580px; margin-top: 20px; color: var(--text-2); font-size: 17px; }
+    .text-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 24px;
+      padding: 2px 0;
+      border: 0;
+      border-bottom: 1px solid transparent;
+      background: none;
+      color: var(--primary-deep);
+      font-weight: 700;
+    }
+    .text-link::after { content: "→"; transition: transform .18s ease; }
+    .text-link:hover { border-bottom-color: currentColor; }
+    .text-link:hover::after { transform: translateX(4px); }
+    .button-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .button {
+      display: inline-flex;
+      min-height: 46px;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 22px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      font-weight: 700;
+      transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
+    }
+    .button:hover { transform: translateY(-1px); }
+    .button-primary { background: var(--primary); color: white; }
+    .button-primary:hover { background: var(--primary-deep); }
+    .button-secondary { border-color: var(--border); background: transparent; color: var(--text); }
+    .button-secondary:hover { border-color: var(--primary); color: var(--primary-deep); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--border);
+      background: rgba(250, 250, 248, .97);
+    }
+    .header-inner { display: flex; min-height: 76px; align-items: center; gap: 28px; }
+    .brand { display: inline-flex; align-items: center; gap: 12px; flex: none; }
+    .brand-mark {
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--primary-deep);
+      color: white;
+      font-family: var(--serif);
+      font-size: 20px;
+    }
+    .brand-name { display: block; font-family: var(--serif); font-size: 18px; font-weight: 700; line-height: 1.25; }
+    .brand-subtitle { display: block; margin-top: 2px; color: var(--text-2); font-size: 11px; line-height: 1.25; }
+    .main-nav { display: flex; align-items: center; justify-content: center; gap: 24px; flex: 1; }
+    .main-nav a { position: relative; padding: 8px 0; color: var(--text-2); font-size: 14px; }
+    .main-nav a:hover { color: var(--primary-deep); }
+    .main-nav a::after {
+      position: absolute;
+      right: 0;
+      bottom: 3px;
+      left: 0;
+      height: 1px;
+      background: var(--primary);
+      content: "";
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform .18s ease;
+    }
+    .main-nav a:hover::after { transform: scaleX(1); }
+    .login-button { border: 0; background: none; color: var(--primary-deep); font-size: 14px; font-weight: 700; }
+
+    .hero { padding: 104px 0 96px; text-align: center; }
+    .hero-eyebrow { margin-bottom: 24px; color: var(--primary); font-size: 15px; font-weight: 700; letter-spacing: .16em; }
+    .hero h1 { font-size: clamp(40px, 5vw, 56px); line-height: 1.22; letter-spacing: -.045em; }
+    .hero h1 span { display: block; }
+    .hero h1 .hero-emphasis { color: var(--primary-deep); }
+    .hero-description { max-width: 700px; margin: 26px auto 0; color: var(--text-2); font-size: 19px; line-height: 1.8; }
+    .hero .button-row { justify-content: center; margin-top: 34px; }
+    .hero-search { max-width: 760px; margin: 64px auto 0; text-align: left; }
+    .hero-search label { display: block; margin-bottom: 10px; font-size: 14px; font-weight: 700; }
+    .search-row {
+      display: flex;
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface);
+    }
+    .search-row:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+    .search-row input {
+      width: 100%;
+      min-width: 0;
+      padding: 8px 12px;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 16px;
+    }
+    .search-row input::placeholder { color: var(--text-3); }
+    .search-row .button { min-height: 42px; flex: none; padding: 8px 22px; }
+    .search-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; color: var(--text-2); font-size: 13px; }
+    .example-query { padding: 0; border: 0; border-bottom: 1px solid var(--border); background: none; color: var(--primary-deep); }
+    .search-status { min-height: 25px; margin-top: 8px; color: var(--primary-deep); font-size: 14px; }
+
+    .learning-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 42px; margin-top: 64px; }
+    .learning-item { padding-top: 24px; border-top: 1px solid var(--border); }
+    .learning-step { color: #a44f32; font-size: 13px; font-weight: 700; letter-spacing: .08em; }
+    .learning-item h3 { margin-top: 14px; font-size: 28px; }
+    .learning-item p { margin-top: 14px; color: var(--text-2); }
+
+    .formula-section { padding: 104px 0; background: var(--primary-ink); color: white; }
+    .formula-section .section-kicker { color: #a9d2c8; }
+    .formula-section .section-title { max-width: 720px; }
+    .formula-grid { display: grid; grid-template-columns: .85fr 1.15fr; gap: 88px; align-items: center; margin-top: 64px; }
+    .formula-label { color: #a9d2c8; font-size: 14px; }
+    .formula-name { margin-top: 8px; font-size: 64px; line-height: 1.25; }
+    .herb-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 24px; margin: 30px 0 0; padding: 0; list-style: none; }
+    .herb-list li { padding: 14px 0; border-top: 1px solid rgba(255, 255, 255, .2); font-family: var(--serif); font-size: 21px; }
+    .herb-list small { display: block; color: #b8cec8; font-family: var(--sans); font-size: 12px; }
+    .classic-quote { padding-left: 32px; border-left: 2px solid var(--gold); }
+    .classic-quote p { font-family: var(--serif); font-size: clamp(22px, 2.5vw, 28px); line-height: 1.9; }
+    .classic-quote footer { margin-top: 24px; color: #c6d8d3; font-size: 14px; }
+    .formula-actions { margin-top: 36px; }
+    .formula-section .button-primary { background: white; color: var(--primary-ink); }
+    .formula-section .button-primary:hover { background: var(--primary-soft); }
+    .formula-section .button-secondary { border-color: rgba(255, 255, 255, .4); color: white; }
+    .formula-section .button-secondary:hover { border-color: white; }
+
+    .relation-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 80px; align-items: center; }
+    .graph-canvas { padding: 24px; border: 1px solid var(--border); border-radius: 24px; background: #f0f5f2; }
+    .graph-canvas svg { display: block; width: 100%; height: auto; }
+    .graph-caption { margin-top: 8px; color: var(--text-2); font-size: 13px; text-align: center; }
+
+    .ask-section { padding: 104px 0; background: var(--surface-2); }
+    .ask-grid { display: grid; grid-template-columns: .85fr 1.15fr; gap: 80px; align-items: center; }
+    .ask-example { padding: 36px; border: 1px solid var(--border); border-radius: 22px; background: var(--surface); }
+    .example-label { color: var(--text-2); font-size: 13px; }
+    .question { max-width: 88%; margin: 22px 0 28px auto; padding: 12px 18px; border-radius: 14px 14px 3px 14px; background: var(--primary); color: white; }
+    .answer-quote { padding-left: 20px; border-left: 2px solid var(--gold); font-family: var(--serif); font-size: 18px; line-height: 1.9; }
+    .answer-source { margin-top: 18px; color: var(--primary-deep); font-size: 13px; font-weight: 700; }
+    .example-note { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--text-2); font-size: 12px; }
+
+    .practice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 88px; align-items: start; }
+    .practice-steps { margin: 0; padding: 0; list-style: none; counter-reset: practice; }
+    .practice-steps li { position: relative; padding: 24px 0 24px 62px; border-top: 1px solid var(--border); counter-increment: practice; }
+    .practice-steps li::before {
+      position: absolute;
+      top: 24px;
+      left: 0;
+      color: var(--accent);
+      content: "0" counter(practice);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .practice-steps strong { display: block; font-family: var(--serif); font-size: 21px; }
+    .practice-steps span { display: block; margin-top: 6px; color: var(--text-2); font-size: 14px; }
+
+    .review-section { padding: 96px 0; border-top: 1px solid var(--border); background: var(--surface); }
+    .review-heading { max-width: 760px; }
+    .review-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 42px; margin-top: 56px; }
+    .review-item { padding-top: 20px; border-top: 1px solid var(--border); }
+    .review-item h3 { font-size: 22px; }
+    .review-item p { margin-top: 10px; color: var(--text-2); font-size: 14px; }
+    .closing { margin-top: 72px; text-align: center; }
+    .closing p { margin-bottom: 22px; color: var(--text-2); }
+
+    .site-footer { padding: 30px 0; border-top: 1px solid var(--border); }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; color: var(--text-2); font-size: 13px; }
+    .footer-inner a { color: var(--primary-deep); font-weight: 700; }
+
+    .preview-toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 50;
+      display: flex;
+      max-width: min(420px, calc(100% - 32px));
+      align-items: flex-start;
+      gap: 18px;
+      padding: 16px 18px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--text);
+      color: white;
+      box-shadow: 0 12px 30px rgba(20, 30, 25, .16);
+      font-size: 14px;
+    }
+    .preview-toast[hidden] { display: none; }
+    .preview-toast button { padding: 0; border: 0; background: none; color: white; font-size: 20px; line-height: 1.4; }
+
+    .hero-eyebrow, .hero h1, .hero-description, .hero .button-row, .hero-search {
+      animation: arrive .55s ease both;
+    }
+    .hero h1 { animation-delay: .05s; }
+    .hero-description { animation-delay: .1s; }
+    .hero .button-row { animation-delay: .15s; }
+    .hero-search { animation-delay: .2s; }
+    @keyframes arrive { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+    body.has-scroll-reveal [data-reveal] {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity .5s ease, transform .58s cubic-bezier(.22, .61, .36, 1);
+      transition-delay: var(--reveal-delay, 0ms);
+    }
+    body.has-scroll-reveal [data-reveal].is-visible { opacity: 1; transform: none; }
+
+    @media (max-width: 980px) {
+      .header-inner { flex-wrap: wrap; gap: 8px 20px; padding: 12px 0; }
+      .main-nav { order: 3; justify-content: flex-start; gap: 12px 22px; flex-basis: 100%; flex-wrap: wrap; }
+      .login-button { margin-left: auto; }
+      .formula-grid, .relation-grid, .ask-grid, .practice-grid { grid-template-columns: 1fr; gap: 48px; }
+      .formula-grid { margin-top: 48px; }
+      .graph-canvas { max-width: 680px; }
+    }
+
+    @media (max-width: 720px) {
+      html { scroll-padding-top: 24px; }
+      .shell { width: min(100% - 32px, var(--max-width)); }
+      .site-header { position: static; }
+      .brand-subtitle { display: none; }
+      .main-nav { gap: 6px 18px; }
+      .main-nav a { font-size: 13px; }
+      .hero { padding: 64px 0 68px; }
+      .hero-eyebrow { margin-bottom: 18px; font-size: 13px; }
+      .hero h1 { font-size: 36px; }
+      .hero-description { margin-top: 20px; font-size: 17px; }
+      .hero-search { margin-top: 44px; }
+      .section, .formula-section, .ask-section { padding: 72px 0; }
+      .section-title { font-size: 32px; }
+      .section-copy { font-size: 16px; }
+      .learning-grid, .review-list { grid-template-columns: 1fr; gap: 32px; margin-top: 44px; }
+      .learning-item h3 { font-size: 25px; }
+      .formula-name { font-size: 52px; }
+      .classic-quote { padding-left: 22px; }
+      .ask-example { padding: 24px 20px; }
+      .review-section { padding: 72px 0; }
+      .footer-inner { align-items: flex-start; flex-direction: column; }
+      .preview-toast { right: 16px; bottom: 16px; }
+    }
+
+    @media (max-width: 420px) {
+      .brand-name { font-size: 16px; }
+      .header-inner { gap: 8px 12px; }
+      .search-row { gap: 6px; padding: 6px; }
+      .search-row input { padding: 8px; font-size: 14px; }
+      .search-row .button { padding: 8px 14px; }
+      .button-row { align-items: stretch; flex-direction: column; }
+      .button-row .button { width: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="#top" aria-label="本草心智，返回首页">
+        <span class="brand-mark" aria-hidden="true">本</span>
+        <span>
+          <span class="brand-name">本草心智</span>
+          <span class="brand-subtitle">中医经典学习平台</span>
+        </span>
+      </a>
+      <nav class="main-nav" aria-label="主要导航">
+        <a href="#reading">读典籍</a>
+        <a href="#search">查方证</a>
+        <a href="#practice">做练习</a>
+        <a href="#relations">方剂关系</a>
+        <a href="#ask">问答</a>
+      </nav>
+      <button class="login-button" type="button" data-preview-message="当前是静态界面预览，登录功能将在迁入正式前端后接入。">登录</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero shell" id="top" aria-labelledby="hero-title">
+      <p class="hero-eyebrow">为中医经典学习而做</p>
+      <h1 id="hero-title">
+        <span>读经典，查方证，</span>
+        <span class="hero-emphasis">练辨证。</span>
+      </h1>
+      <p class="hero-description">从典籍原文到方剂、医案和病案练习，把阅读、思考与复习放在同一个地方，学习过程中随时核对出处。</p>
+      <div class="button-row">
+        <a class="button button-primary" href="#reading">开始阅读</a>
+        <a class="button button-secondary" href="#search">查方剂与医案</a>
+      </div>
+
+      <form class="hero-search" id="search" role="search">
+        <label for="learning-search">查找方剂、药味或经典原文</label>
+        <div class="search-row">
+          <input id="learning-search" name="q" type="search" autocomplete="off" placeholder="试试“麻黄汤”或“无汗而喘”">
+          <button class="button button-primary" type="submit">检索</button>
+        </div>
+        <div class="search-meta">
+          <span>预览示例：</span>
+          <button class="example-query" type="button" data-query="麻黄汤">麻黄汤</button>
+          <button class="example-query" type="button" data-query="无汗而喘">无汗而喘</button>
+        </div>
+        <p class="search-status" id="search-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="section shell" id="reading" aria-labelledby="reading-title">
+      <p class="section-kicker">一条清楚的学习路径</p>
+      <h2 class="section-title" id="reading-title">从翻开书，到逐层读懂。</h2>
+      <p class="section-copy">不必先理解复杂的功能名称。读原文、找内容、做练习，就是在这里学习的三件事。</p>
+      <div class="learning-grid">
+        <article class="learning-item">
+          <span class="learning-step">阅读</span>
+          <h3>读典籍</h3>
+          <p>按章节目录阅读《伤寒论》，在原文中查看相关方剂与医案，不必在多个页面之间来回找。</p>
+          <a class="text-link" href="#formula">看看典籍如何呈现</a>
+        </article>
+        <article class="learning-item">
+          <span class="learning-step">检索</span>
+          <h3>查方证</h3>
+          <p>输入方名、药味或症状，找到相关条文与医案，再沿着出处回到典籍原文。</p>
+          <a class="text-link" href="#search">试查麻黄汤</a>
+        </article>
+        <article class="learning-item">
+          <span class="learning-step">练习</span>
+          <h3>练病案</h3>
+          <p>先写下自己的辨证思路，再对照参考内容；做错的题留在错题本，方便下次复习。</p>
+          <a class="text-link" href="#practice">看看怎样练习</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="formula-section" id="formula" aria-labelledby="formula-title">
+      <div class="shell">
+        <p class="section-kicker">典籍、方剂与原文互相关联</p>
+        <h2 class="section-title" id="formula-title" tabindex="-1">从一首方，看到组成与出处。</h2>
+        <div class="formula-grid">
+          <div>
+            <p class="formula-label">方剂示例</p>
+            <h3 class="formula-name">麻黄汤</h3>
+            <ul class="herb-list" aria-label="麻黄汤组成药味">
+              <li>麻黄<small>组成药味</small></li>
+              <li>桂枝<small>组成药味</small></li>
+              <li>杏仁<small>组成药味</small></li>
+              <li>炙甘草<small>组成药味</small></li>
+            </ul>
+          </div>
+          <blockquote class="classic-quote">
+            <p>太阳病，头痛发热，身疼腰痛，骨节疼痛，恶风，无汗而喘者，麻黄汤主之。</p>
+            <footer>《伤寒论》· 第 35 条 · 第 19 页</footer>
+          </blockquote>
+        </div>
+        <div class="button-row formula-actions">
+          <a class="button button-primary" href="#relations">查看方剂关系</a>
+          <a class="button button-secondary" href="#practice">进入相关练习</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section shell" id="relations" aria-labelledby="relations-title">
+      <div class="relation-grid">
+        <div>
+          <p class="section-kicker">方剂关系</p>
+          <h2 class="section-title" id="relations-title">方剂与药味，关系一眼看清。</h2>
+          <p class="section-copy">从麻黄汤出发逐味查看组成。正式页面还可以继续展开相关方剂，比较它们之间的联系。</p>
+          <a class="text-link" href="#formula">回到麻黄汤示例</a>
+        </div>
+        <figure class="graph-canvas">
+          <svg viewBox="0 0 560 350" role="img" aria-labelledby="graph-title graph-desc">
+            <title id="graph-title">麻黄汤与四味组成药味的关系图</title>
+            <desc id="graph-desc">麻黄汤位于中心，分别连接麻黄、桂枝、杏仁和炙甘草。</desc>
+            <g stroke="#a8b9b2" stroke-width="1.5">
+              <line x1="280" y1="175" x2="120" y2="70"></line>
+              <line x1="280" y1="175" x2="440" y2="70"></line>
+              <line x1="280" y1="175" x2="120" y2="280"></line>
+              <line x1="280" y1="175" x2="440" y2="280"></line>
+            </g>
+            <g font-family="Microsoft YaHei, sans-serif" text-anchor="middle">
+              <circle cx="280" cy="175" r="54" fill="#1f5c52"></circle>
+              <text x="280" y="182" fill="#ffffff" font-size="20">麻黄汤</text>
+              <circle cx="120" cy="70" r="39" fill="#ffffff" stroke="#2e7d6f" stroke-width="1.5"></circle>
+              <text x="120" y="77" fill="#173f37" font-size="17">麻黄</text>
+              <circle cx="440" cy="70" r="39" fill="#ffffff" stroke="#2e7d6f" stroke-width="1.5"></circle>
+              <text x="440" y="77" fill="#173f37" font-size="17">桂枝</text>
+              <circle cx="120" cy="280" r="39" fill="#ffffff" stroke="#2e7d6f" stroke-width="1.5"></circle>
+              <text x="120" y="287" fill="#173f37" font-size="17">杏仁</text>
+              <circle cx="440" cy="280" r="45" fill="#ffffff" stroke="#2e7d6f" stroke-width="1.5"></circle>
+              <text x="440" y="287" fill="#173f37" font-size="17">炙甘草</text>
+            </g>
+          </svg>
+          <figcaption class="graph-caption">麻黄汤 · 组成关系示例</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="ask-section" id="ask" aria-labelledby="ask-title">
+      <div class="shell ask-grid">
+        <div>
+          <p class="section-kicker">典籍问答</p>
+          <h2 class="section-title" id="ask-title">有疑问，顺着出处回到原文。</h2>
+          <p class="section-copy">提问之后不只看一段回答，还能打开对应典籍、条文与页码，自己再读一遍上下文。</p>
+        </div>
+        <article class="ask-example" aria-label="问答界面示例">
+          <p class="example-label">问答示例</p>
+          <p class="question">麻黄汤的原文出处在哪里？</p>
+          <blockquote class="answer-quote">太阳病，头痛发热，身疼腰痛，骨节疼痛，恶风，无汗而喘者，麻黄汤主之。</blockquote>
+          <p class="answer-source">查看出处：《伤寒论》· 第 35 条 · 第 19 页</p>
+          <p class="example-note">这里仅展示回答与出处的排版，不连接问答服务。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section shell" id="practice" aria-labelledby="practice-title">
+      <div class="practice-grid">
+        <div>
+          <p class="section-kicker">病案练习</p>
+          <h2 class="section-title" id="practice-title">先作答，再对照原文。</h2>
+          <p class="section-copy">把思考留在答案之前。练习后查看参考内容，需要巩固的病案可以留到错题本里继续复习。</p>
+          <a class="text-link" href="#review">看看如何复习</a>
+        </div>
+        <ol class="practice-steps">
+          <li><strong>阅读病案</strong><span>先读症状、脉象与医案记录，不急着看参考内容。</span></li>
+          <li><strong>写下思路</strong><span>记录自己的辨证依据，再提交作答。</span></li>
+          <li><strong>对照与复习</strong><span>查看参考内容，把需要再练的病案留在错题本。</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="review-section" id="review" aria-labelledby="review-title">
+      <div class="shell">
+        <div class="review-heading">
+          <p class="section-kicker">学习不止发生在当下</p>
+          <h2 class="section-title" id="review-title">读过、查过、练过，还能回来看。</h2>
+        </div>
+        <div class="review-list">
+          <article class="review-item"><h3>收藏</h3><p>留住常用的方剂、条文和医案，下次直接从收藏继续。</p></article>
+          <article class="review-item"><h3>笔记</h3><p>把自己的理解记在原内容旁，复习时一起回看。</p></article>
+          <article class="review-item"><h3>错题复习</h3><p>按练习记录回到需要巩固的病案，不必重新寻找。</p></article>
+        </div>
+        <div class="closing">
+          <p>从一章典籍、一首方或一道病案开始。</p>
+          <a class="button button-primary" href="#reading">开始今天学习</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-inner">
+      <span>本草心智 · 中医经典学习平台 · 界面预览</span>
+      <a href="#top">回到顶部 ↑</a>
+    </div>
+  </footer>
+
+  <div class="preview-toast" id="preview-toast" role="status" aria-live="polite" hidden>
+    <span id="preview-toast-text"></span>
+    <button type="button" id="close-toast" aria-label="关闭提示">×</button>
+  </div>
+
+  <script>
+    const searchForm = document.querySelector('#search')
+    const searchInput = document.querySelector('#learning-search')
+    const searchStatus = document.querySelector('#search-status')
+    const formulaTitle = document.querySelector('#formula-title')
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+
+    function setupScrollReveal() {
+      if (reduceMotion.matches || !('IntersectionObserver' in window)) return
+
+      const revealGroups = [
+        ['#reading > .section-kicker', '#reading > .section-title', '#reading > .section-copy'],
+        ['#reading .learning-item'],
+        ['#formula .section-kicker', '#formula .section-title'],
+        ['#formula .formula-grid > div', '#formula .classic-quote', '#formula .formula-actions'],
+        ['#relations .relation-grid > div:first-child', '#relations .graph-canvas'],
+        ['#ask .ask-grid > div:first-child', '#ask .ask-example'],
+        ['#practice .practice-grid > div:first-child', '#practice .practice-steps li'],
+        ['#review .review-heading', '#review .review-item', '#review .closing']
+      ]
+      const items = []
+
+      revealGroups.forEach((selectors) => {
+        const groupItems = selectors.flatMap((selector) => Array.from(document.querySelectorAll(selector)))
+        groupItems.forEach((element, index) => {
+          if (!items.includes(element)) {
+            element.setAttribute('data-reveal', '')
+            element.style.setProperty('--reveal-delay', `${Math.min(index * 70, 280)}ms`)
+            items.push(element)
+          }
+        })
+      })
+
+      document.body.classList.add('has-scroll-reveal')
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return
+          entry.target.classList.add('is-visible')
+          observer.unobserve(entry.target)
+        })
+      }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' })
+      items.forEach((element) => observer.observe(element))
+    }
+
+    setupScrollReveal()
+
+    function runSearch() {
+      const query = searchInput.value.trim()
+      if (!query) {
+        searchStatus.textContent = '请输入方名、药味或原文关键词。'
+        searchInput.focus()
+        return
+      }
+
+      const exactExamples = ['麻黄', '桂枝', '杏仁', '炙甘草', '伤寒论']
+      const matchesExample = /麻黄汤|无汗而喘|第\s*35\s*条/.test(query) || exactExamples.includes(query)
+      if (!matchesExample) {
+        searchStatus.textContent = '当前预览仅收录麻黄汤示例，请试试“麻黄汤”或“无汗而喘”。'
+        return
+      }
+
+      searchStatus.textContent = `已找到预览示例：麻黄汤（检索词：${query}）`
+      document.querySelector('#formula').scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth' })
+      formulaTitle.focus({ preventScroll: true })
+    }
+
+    searchForm.addEventListener('submit', (event) => {
+      event.preventDefault()
+      runSearch()
+    })
+
+    document.querySelectorAll('[data-query]').forEach((button) => {
+      button.addEventListener('click', () => {
+        searchInput.value = button.dataset.query
+        runSearch()
+      })
+    })
+
+    const toast = document.querySelector('#preview-toast')
+    const toastText = document.querySelector('#preview-toast-text')
+    document.querySelectorAll('[data-preview-message]').forEach((button) => {
+      button.addEventListener('click', () => {
+        toastText.textContent = button.dataset.previewMessage
+        toast.hidden = false
+        document.querySelector('#close-toast').focus()
+      })
+    })
+    document.querySelector('#close-toast').addEventListener('click', () => {
+      toast.hidden = true
+      document.querySelector('[data-preview-message]').focus()
+    })
+  </script>
+</body>
+</html>

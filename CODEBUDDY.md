@@ -85,6 +85,16 @@
 - **要查技术细节**：`README.md`、`docs/新人上手指南.md`、`project_plan/`；本机的 `PROJECT_MEMORY.md` + `memory/` 分册是逐条实核过的事实（端口拓扑、ETL 依赖链、踩过的坑），优先级高于任何口头描述。
 - 给组员看的是 `README.md` / `docs/` / `project_plan/`；`PROJECT_MEMORY.md` 与 `memory/` 是维护者本机的记录。
 
+## 十、软件工程课程分析工作区
+
+- 当任务涉及《软件工程导论》的课程分析、需求分析、可行性研究、系统设计、测试、项目管理或答辩材料时，**先读 `thinkForProject/README.md`**，不要直接沿用 `project_plan/` 或现有实现文档的口径。
+- 目录分工固定：`thinkForProject/docs/` 放正式课程文档，`thinkForProject/track/` 放决策、访谈、模型草稿等中间产物，`thinkForProject/plan/` 放总体计划、全局记忆和写作规范。
+- 该工作区以课程方法重新分析系统，**不把现有代码和实现细节当作需求或设计依据**；不得为了迁就实现而反向修改课程文档中的问题定义与需求。
+- 每次继续课程任务前，先读 `thinkForProject/plan/00_全局记忆.md`、`01_总体计划.md` 和最近一次 `track/00_决策与工作日志.md`；阶段状态以这些文件为准。
+- 正式文档必须遵守 `thinkForProject/plan/02_文档规范.md`，并维护需求、用例、设计、测试之间的追踪关系。未确认课程模板、提交格式和团队信息前，不提前编写正式正文。
+- 未经用户明确要求，不因课程文档任务修改业务代码；课程工作区的产出不得与实现文档混为一体。
+- 课程讨论允许双方提问、质疑和反驳，但意见必须说明事实依据、推理过程、影响范围或验证方式；不得用印象、语气或身份替代论证，不确定就明确说不确定。
+
 <!-- superpowers-zh:begin (do not edit between these markers) -->
 # Superpowers-ZH 中文增强版
 
