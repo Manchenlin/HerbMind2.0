@@ -1,0 +1,83 @@
+fr_id,coverage,endpoints,note
+FR-101,api,POST /api/app/book-applications,提交申请；字段与"无文件上传入口"在请求体校验
+FR-102,api,GET /api/app/book-applications/mine,状态与驳回理由随记录返回
+FR-103,api,POST /api/admin/import-tasks,负向用例：学习者调用返回 2002，不产生任务
+FR-104,api,POST /api/admin/book-applications/{id}/approve;POST /api/admin/book-applications/{id}/reject;GET /api/admin/books?status=,通过生成书目；判定人与时间留痕；书目列表用于确认生成结果
+FR-105,api,POST /api/admin/book-applications/{id}/approve,缺目录或版本时拒绝并指明缺项
+FR-106,api,POST /api/app/book-applications;GET /api/app/book-applications/mine,多次申请保留历史，旧记录不覆盖
+FR-111,api,POST /api/admin/import-tasks,multipart 只接受 docx/txt；非管理员 2002
+FR-112,api,POST /api/admin/import-tasks;GET /api/admin/import-tasks/{id}/report,去重发生在导入环节，去重数进报告
+FR-113,api,POST /api/admin/import-tasks;GET /api/admin/import-tasks/{id}/report,清洗规则可配置，清洗数进报告
+FR-114,api,POST /api/admin/import-tasks;GET /api/admin/import-tasks/{id}/report,目录行表不建单元；表格转换数进报告
+FR-115,api,POST /api/admin/import-tasks;GET /api/app/books/{id}/chapters;PATCH /api/admin/units/{id},建树 + 人工纠正层级
+FR-116,api,POST /api/admin/import-tasks;GET /api/admin/import-tasks/{id}/review-items?type=&page=;PATCH /api/admin/units/{id},五值标注入库；未标注段进待校对队列
+FR-117,api,POST /api/admin/import-tasks;GET /api/admin/import-tasks/{id}/report;GET /api/app/units/{id},缺书名篇名不入库并报错；展示侧带出处块
+FR-118,api,GET /api/admin/import-tasks/{id}/report,报告六项计数 + 词表匹配率门禁
+FR-119,api,GET /api/admin/import-tasks/{id}/review-items?type=&page=;PATCH /api/admin/units/{id},逐条对照与确认/修正/驳回
+FR-120,api,PATCH /api/admin/units/{id};GET /api/admin/audit-logs,修正写原值/新值/操作人/时间
+FR-121,api,POST /api/admin/import-tasks/{id}/sampling;GET /api/admin/import-tasks/{id}/sampling,抽样任务创建（比例 ≥10%、不少于 100 段、按章分层）与结果错误率导出；v0.9 补端点
+FR-122,api,POST /api/admin/import-tasks;GET /api/admin/import-tasks/{id}/report,门禁在导入收尾环节拦截并列出原因
+FR-201,api,GET /api/app/chapters/{id}/units?page=&size=,分页按篇内序号升序，不重排不合并
+FR-202,api,GET /api/app/books;GET /api/app/books/{id}/chapters,书列表是导航树根，再进多层章节树
+FR-203,api,PUT /api/app/progress,最后阅读位置
+FR-204,api,GET /api/app/units/{id},单元详情带出处块；"常驻显示"由前端承担，不需要额外端点
+FR-205,api,GET /api/app/formulas/{id},跳转目标由详情接口提供；跳转与返回态在前端
+FR-206,rule,GET /api/app/units/{id},显示值直出不做转换；用逐字比对用例验证
+FR-207,ui,,免责声明为界面固定文案，无接口
+FR-208,ui,,首次使用引导为前端一次性展示，无接口
+FR-209,api,GET /api/app/search?q=&scope=&bookId=;POST /api/app/exercises;POST /api/app/exercises/{id}/answer;GET /api/app/units/{id},三向跳转靠上下文锚参数贯通，往返态在前端
+FR-301,api,GET /api/app/formulas?name=,同名跨书分组返回，不合并
+FR-302,api,GET /api/app/formulas/{id},组成 + 出处条文 + 跨书差异三段
+FR-303,api,GET /api/app/formulas/{id};POST /api/app/formulas/compare,逐味并列，不取标准组成
+FR-304,api,GET /api/app/search?q=&scope=&bookId=;GET /api/app/formulas?name=;GET /api/app/formulas?herb=;GET /api/app/formulas/{id};GET /api/app/cases/{id};GET /api/app/cases?formulaId=,横切：六个检索类端点的响应都必须含出处块
+FR-305,api,GET /api/app/formulas?herb=,单味药反查，结果可回溯
+FR-306,api,POST /api/app/formulas/compare,2～4 个 id
+FR-307,rule,GET /api/app/search?q=&scope=&bookId=;GET /api/app/formulas?name=,匹配用归一值、展示用原字；实现约束见 05 §11.3
+FR-308,api,GET /api/app/search?q=&scope=&bookId=;GET /api/app/cases?formulaId=,两个入口
+FR-309,api,GET /api/app/cases/{id},详情不含推演结论，抽取侧限制
+FR-310,api,GET /api/app/search?q=&scope=&bookId=,三类对象同一入口分组返回
+FR-311,deferred,,延后项，本期不要求端点
+FR-401,api,POST /api/app/exercises,题型枚举只含三类
+FR-402,api,POST /api/app/exercises,范围参数
+FR-403,rule,POST /api/app/exercises,题目由结构化规则生成，同范围可复现
+FR-404,rule,POST /api/app/exercises,唯一正解判定在生成阶段
+FR-405,api,POST /api/app/exercises/{id}/answer,返回依据原文与出处
+FR-406,rule,POST /api/app/exercises,判据不全的实体不进题池
+FR-407,api,POST /api/app/exercises/{id}/answer,作答落库
+FR-408,api,GET /api/app/wrong-answers?page=,错题簿
+FR-409,api,POST /api/app/exercises/{id}/answer;GET /api/app/reviews/due?limit=,作答返回复习条目变化；到期序列由 due 给出
+FR-410,api,GET /api/app/reviews/summary,当日待复习数
+FR-411,deferred,,延后项
+FR-412,api,GET /api/app/wrong-answers?page=;GET /api/app/units/{id},错题与练习可跳原文并返回；返回态在前端
+FR-501,api,POST /api/app/ask,未配密钥时 status 为降级态且不请求外部模型
+FR-502,api,POST /api/app/ask,三条件拒答
+FR-503,api,POST /api/app/ask;GET /api/admin/gaps?status=&overdue=,拒答提示 + 自动写缺口
+FR-504,rule,POST /api/app/ask,缺出处不得输出，响应组装校验
+FR-505,deferred,,延后项
+FR-506,rule,POST /api/app/ask,输出过滤与提示词约束
+FR-507,rule,,密钥只在服务端配置，无接口暴露
+FR-601,api,POST /api/app/ask;GET /api/admin/gaps?status=&overdue=,拒答时写队列
+FR-602,api,POST /api/app/gaps,手动上报，入队前过内容安全
+FR-603,api,GET /api/admin/gaps?status=&overdue=;PATCH /api/admin/gaps/{id},状态流转 + overdue 筛超期
+FR-604,api,GET /api/admin/conflicts?status=&overdue=,导入收尾生成冲突条目
+FR-605,api,GET /api/admin/conflicts?status=&overdue=;PATCH /api/admin/conflicts/{id},并列展示，无裁决
+FR-606,api,GET /api/admin/conflicts?status=&overdue=;PATCH /api/admin/conflicts/{id},处理留痕 + overdue 筛超期；v0.9 补参数
+FR-607,rule,,无自动合并逻辑，代码审查项
+FR-608,deferred,,延后项
+FR-701,api,POST /api/app/auth/login;POST /api/app/auth/bind;GET /api/app/auth/me,两端并入同一账号
+FR-702,api,PUT /api/app/progress;GET /api/app/favorites;GET /api/app/notes;GET /api/app/wrong-answers?page=,同一账号读同一份数据
+FR-703,api,GET /api/app/favorites;POST /api/app/favorites;DELETE /api/app/favorites/{id};GET /api/app/notes;POST /api/app/notes;PATCH /api/app/notes/{id};DELETE /api/app/notes/{id},收藏与笔记的增删改查
+FR-704,rule,,数据表不含患者信息字段，建模约束
+FR-705,api,DELETE /api/app/me/learning-records,删除本人学习记录（进度/作答/错题/复习状态）；收藏与笔记走各自端点；v0.9 补端点
+FR-706,ui,GET /api/app/auth/me,PC 端按角色不渲染学习入口；接口侧靠 role 判断
+FR-801,rule,,全部 /api/admin/** 前缀统一角色拦截
+FR-802,api,GET /api/admin/book-applications?status=;POST /api/admin/book-applications/{id}/approve;POST /api/admin/book-applications/{id}/reject,队列与处理
+FR-803,api,POST /api/admin/import-tasks;GET /api/admin/import-tasks/{id};POST /api/admin/import-tasks/{id}/retry,进度、失败原因、重试
+FR-804,api,GET /api/admin/import-tasks/{id}/review-items?type=&page=;PATCH /api/admin/units/{id};POST /api/admin/import-tasks/{id}/sampling;GET /api/admin/import-tasks/{id}/sampling,校对页面 + 抽样页面（v0.9 补抽样）
+FR-805,api,GET /api/admin/gaps?status=&overdue=;GET /api/admin/conflicts?status=&overdue=;PATCH /api/admin/gaps/{id};PATCH /api/admin/conflicts/{id},两类分开展示
+FR-806,api,GET /api/admin/audit-logs,写入由各操作端点触发
+FR-807,deferred,,延后项
+FR-808,api,POST /api/admin/auth/login;POST /api/admin/auth/logout,管理员登录与登出；失败计数与阈值锁定在登录端点内实现，成功与失败均写审计（v1.5 补）
+FR-901,api,POST /api/app/book-applications;POST /api/app/gaps,提交入库前检测
+FR-902,rule,POST /api/app/book-applications;POST /api/app/gaps,检测不可用时写待检态 + 定时补偿；状态字段承载
+FR-903,api,GET /api/admin/audit-logs,拦截留痕，正文不入库
