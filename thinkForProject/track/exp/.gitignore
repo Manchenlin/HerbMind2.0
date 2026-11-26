@@ -1,0 +1,7 @@
+# 脚本与规则表入库，底本衍生数据不入库（体积大且属底本全文）
+corpus.jsonl
+units.tsv
+dup_report.txt
+
+# 第三方包（--target 安装，仅实验用，不入库）
+_libs/

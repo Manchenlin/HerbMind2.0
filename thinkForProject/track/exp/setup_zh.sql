@@ -1,0 +1,5 @@
+-- 中文分词可行性实验：建配置
+DROP TEXT SEARCH CONFIGURATION IF EXISTS chinese_zh;
+CREATE TEXT SEARCH CONFIGURATION chinese_zh (PARSER = zhparser);
+ALTER TEXT SEARCH CONFIGURATION chinese_zh ADD MAPPING FOR n,v,a,i,e,l,q,t WITH simple;
+ALTER TEXT SEARCH CONFIGURATION chinese_zh ADD MAPPING FOR x,p,f,s,u,c,d WITH simple;

@@ -1,0 +1,15 @@
+字,是否参与字级转换,典型反例,本书实测,来源
+乾,否,乾薑→干姜（应转）与 乾隆→干隆（不应转）,本书 0 次（底本已用简体"干"）,OpenCC STPhrases 例外 + docs/03 §8.3
+著,否,著作（zhù，不转）与 著凉（zháo，应转着）,本书 73 次，全部为"著作／显著／著."，无反例,项目实测（见 track/exp 碰撞检查输出）
+幹,否,幹部→干部（应转）与 乾（不同字）,本书 0 次,OpenCC STCharacters
+發,是,發熱→发热；与 髮（头发）同归"发"但属不同词，不产生实体碰撞,本书 0 次（底本已用简体）,OpenCC STCharacters
+髮,是,頭髮→头发,本书 0 次,OpenCC STCharacters
+後,是,後下→后下,本书 1199 次"后"全部为"后下／里急后重／先血后便"，无"皇后"类反例,OpenCC STCharacters
+裡,是,裡急→里急,本书 512 次"里"全部为"里急后重／表里"，无"公里"类反例,OpenCC STCharacters
+裏,是,同上,本书 0 次,OpenCC STCharacters
+臺,是,臺烏→台乌,本书 10 次"台"含"外台秘要／天台乌药"，均无歧义,OpenCC STCharacters
+檯,是,檯子→台子,本书 0 次,OpenCC STCharacters
+範,是,範圍→范围,本书 49 次"范"全部为"典范／范围／范畴",OpenCC STCharacters
+鍾,是,鍾某→钟某,本书 22 次"钟"含"钟嘉熙／钟某／分钟",OpenCC STCharacters
+鬆,是,輕鬆→轻松,本书 16 次"松"含"轻松／疏松／孢曲松钠",OpenCC STCharacters
+僕,是,僕人→仆人,本书 2 次"仆"均为"昏仆"，与"仆人"不同词,OpenCC STCharacters
